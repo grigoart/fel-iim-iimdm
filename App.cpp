@@ -16,6 +16,7 @@ using std::unique_ptr;
 using namespace iimavlib;
 
 class Context;
+class App;
 
 int A[] = {1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1};
 int B[] = {1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0};
@@ -43,6 +44,7 @@ int W[] = {1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1};
 int X[] = {1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1};
 int Y[] = {1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0};
 int Z[] = {1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1};
+int N0[] = {1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1};
 int N1[] = {0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1};
 int N2[] = {1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1};
 int N3[] = {1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1};
@@ -53,6 +55,9 @@ int N7[] = {1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0};
 int N8[] = {1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1};
 int N9[] = {1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0};
 int SP[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int MINUS[] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0};
+int PLUS[] = {0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0};
+int COLON[] = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
 
 int WIN_W = 1024;
 int WIN_H = 768;
@@ -74,13 +79,13 @@ class Drawable {
 
 class Updatable {
 	public:
-		virtual void update() = 0;
+		virtual void update(int delta) = 0;
 };
 
 class Clickable {
 	public:
 		virtual rectangle_t hitrectangle() = 0;
-		virtual void click(int x, int y) = 0;
+		virtual void click(int x, int y, int b) = 0;
 };
 
 class Context {
@@ -128,16 +133,26 @@ class Text: Drawable {
 	public:
 		int x, y;
 		int size = 2;
-		std::string str;
-		Text(int xc, int yc, std::string strc) {
+		std::string* strRef;
+		std::string strStatic;
+		Text(int xc, int yc, std::string* strRefc) {
 			x = xc;
 			y = yc;
-			str = strc;
+			strRef = strRefc;
+		}
+		Text(int xc, int yc, std::string strStaticc) {
+			x = xc;
+			y = yc;
+			strStatic = strStaticc;
+			strRef = &strStatic;
+		}
+		size_t length() {
+			return strRef->length();
 		}
 		void draw(Context& ctx) {
-			for (size_t i = 0; i < str.length(); i++) {
+			for (size_t i = 0; i < strRef->length(); i++) {
 				int* arr = A;
-				switch (str.at(i)) {
+				switch ((*strRef).at(i)) {
 					case 'a': case 'A': arr = A; break;
 					case 'b': case 'B': arr = B; break;
 					case 'c': case 'C': arr = C; break;
@@ -164,6 +179,7 @@ class Text: Drawable {
 					case 'x': case 'X': arr = X; break;
 					case 'y': case 'Y': arr = Y; break;
 					case 'z': case 'Z': arr = Z; break;
+					case '0': arr = N0; break;
 					case '1': arr = N1; break;
 					case '2': arr = N2; break;
 					case '3': arr = N3; break;
@@ -174,6 +190,9 @@ class Text: Drawable {
 					case '8': arr = N8; break;
 					case '9': arr = N9; break;
 					case ' ': arr = SP; break;
+					case '-': arr = MINUS; break;
+					case '+': arr = PLUS; break;
+					case ':': arr = COLON; break;
 					default: break;
 				}
 				for (size_t j = 0; j < 15; j++) {
@@ -182,6 +201,32 @@ class Text: Drawable {
 					}
 				}
 			}
+		}
+};
+
+class CenteredText: public Drawable {
+	public:
+		int x, y, width, height;
+		Text* text;
+		CenteredText(int xc, int yc, int widthc, int heightc, std::string* strRefc) {
+			x = xc;
+			y = yc;
+			width = widthc;
+			height = heightc;
+			text = new Text(x, y, strRefc);
+		}
+		CenteredText(int xc, int yc, int widthc, int heightc, std::string strStaticc) {
+			x = xc;
+			y = yc;
+			width = widthc;
+			height = heightc;
+			text = new Text(x, y, strStaticc);
+		}
+		void draw(Context& ctx) {
+			int textLen = text->size * 3 * text->length() + (text->length() - 1) * text->size;
+			text->x = x + (width - textLen) / 2;
+			text->y = y + (height - text->size * 5) / 2;
+			text->draw(ctx);
 		}
 };
 
@@ -208,7 +253,7 @@ class Button: public Drawable {
 		rectangle_t hitrectangle() {
 			return rectangle_t(x, y, width, height);
 		}
-		void click(int, int) {
+		void click(int, int, int) {
 			on = !on;
 		}
 		void activate() {
@@ -241,7 +286,7 @@ class HeadControlButton: public Drawable, public Clickable {
 		rectangle_t hitrectangle() {
 			return rectangle_t(x, y, width, height);
 		}
-		void click(int, int) {
+		void click(int, int, int) {
 			on = !on;
 		}
 };
@@ -254,7 +299,7 @@ class Head: public Drawable {
 		Text text;
 		HeadControlButton* muteB;
 		Head(int xc, int yc, int widthc, int heightc, std::string& caption, rgb_t colorc):
-			text(xc + 8, yc + 10, caption) {
+			text(xc + 8, yc + 10, &caption) {
 			x = xc;
 			y = yc;
 			width = widthc;
@@ -270,9 +315,9 @@ class Head: public Drawable {
 		rectangle_t hitrectangle() {
 			return rectangle_t(x, y, width, height);
 		}
-		void click(int x, int y) {
+		void click(int x, int y, int) {
 			if (isIn(x, y, muteB->hitrectangle())) {
-				muteB->click(x, y);
+				muteB->click(x, y, 0);
 			}
 		}
 };
@@ -301,10 +346,10 @@ class ButtonCol: public Drawable, public Clickable {
 		rectangle_t hitrectangle() {
 			return rectangle_t(x, y, bSize, (bSize + bGap) * count);
 		}
-		void click(int x, int y) {
+		void click(int x, int y, int) {
 			for (size_t j = 0; j < count; j++) {
 				if (isIn(x, y, b.at(j).hitrectangle())) {
-					b.at(j).click(x, y);
+					b.at(j).click(x, y, 0);
 				}
 			}
 		}
@@ -345,10 +390,10 @@ class HeadCol: public Drawable, public Clickable {
 		rectangle_t hitrectangle() {
 			return rectangle_t(x, y, bWidth, (bHeight + bGap) * count);
 		}
-		void click(int x, int y) {
+		void click(int x, int y, int) {
 			for (size_t j = 0; j < count; j++) {
 				if (isIn(x, y, b.at(j).hitrectangle())) {
-					b.at(j).click(x, y);
+					b.at(j).click(x, y, 0);
 				}
 			}
 		}
@@ -362,6 +407,8 @@ class ButtonGrid: public Drawable, public Updatable, public Clickable {
 		std::vector<ButtonCol> v;
 		int active = -1;
 		bool running = false;
+		int passedTime = 0;
+		int bpm = 120;
 		ButtonGrid(int xc, int yc, int countXc, std::vector<std::string>& captions) {
 			x = xc;
 			y = yc;
@@ -378,17 +425,21 @@ class ButtonGrid: public Drawable, public Updatable, public Clickable {
 				v.at(i).draw(ctx);
 			}
 		}
-		void update() {
-			if (running) activateNext();
+		void update(int delta) {
+			passedTime += delta;
+			if (passedTime >= 60000/bpm/4) {
+				passedTime -= 60000/bpm/4;
+				if (running) activateNext();
+			}
 		}
 		rectangle_t hitrectangle() {return rectangle_t(0, 0, WIN_W, WIN_H);}
-		void click(int x, int y) {
+		void click(int x, int y, int) {
 			if (isIn(x, y, h->hitrectangle())) {
-				h->click(x, y);
+				h->click(x, y, 0);
 			}
 			for (int j = 0; j < countX; j++) {
 				if (isIn(x, y, v.at(j).hitrectangle())) {
-					v.at(j).click(x, y);
+					v.at(j).click(x, y, 0);
 				}
 			}
 		}
@@ -454,7 +505,7 @@ class PlayButton: public Drawable, public Clickable {
 		rectangle_t hitrectangle() {
 			return rectangle_t(x, y, width, width);
 		}
-		void click(int, int) {
+		void click(int, int, int) {
 			on = !on;
 			if (!on) {
 				bg->stop();
@@ -465,26 +516,113 @@ class PlayButton: public Drawable, public Clickable {
 		}
 };
 
-class ControlPanel: public Drawable, public Clickable {
+class ValueSpinBtn: public Drawable {
+	public:
+		int x, y, width, height;
+		rgb_t color;
+		bool up;
+		CenteredText* icon;
+		ValueSpinBtn(int xc, int yc, int widthc, int heightc, bool upc) {
+			x = xc;
+			y = yc;
+			width = widthc;
+			height = heightc;
+			up = upc;
+			icon = new CenteredText(x, y, width, height, (up) ? "+" : "-");
+		}
+		void draw(Context& ctx) {
+			ctx.emptyRectangle(x, y, width, height, SIZE_LINE_THIN, COLOR_LINE);
+			icon->draw(ctx);
+		}
+		rectangle_t hitrectangle() {return rectangle_t(x, y, width, height);}
+};
+
+class ValueSpin: public Drawable, public Updatable, public Clickable {
+	public:
+		int x, y, width = 75, height = 75;
+		rgb_t color;
+		int* valueRef;
+		std::string value;
+		int step = 1;
+		int bigStep = 5;
+		int maxValue = 300;
+		int minValue = 1;
+		
+		CenteredText* caption;
+		ValueSpinBtn* valueSpinBtnUp;
+		ValueSpinBtn* valueSpinBtnDown;
+		CenteredText* valueText;
+		ValueSpin(int xc, int yc, int* valueRefc) {
+			x = xc;
+			y = yc;
+			valueRef = valueRefc;
+			value = std::to_string(*valueRef);
+			caption = new CenteredText(x, y, width, height / 4, "Tempo");
+			valueText = new CenteredText(x, y + 2 * height / 4, width, height / 4, &value);
+			valueSpinBtnUp = new ValueSpinBtn(x, y + height / 4, width, height / 4, true);
+			valueSpinBtnDown = new ValueSpinBtn(x, y + 3 * height / 4, width, height / 4, false);
+		}
+		void draw(Context& ctx) {
+			caption->draw(ctx);
+			valueSpinBtnUp->draw(ctx);
+			valueText->draw(ctx);
+			valueSpinBtnDown->draw(ctx);
+		}
+		void update(int) {
+			value = std::to_string(*valueRef);
+		}
+		rectangle_t hitrectangle() {return rectangle_t(x, y, width, height);}
+		void click(int x, int y, int b) {
+			if (isIn(x, y, valueSpinBtnUp->hitrectangle())) {
+				if (b == 0) {
+					(*valueRef) += step;
+				}
+				else {
+					(*valueRef) += bigStep;
+				}
+				if (*valueRef > maxValue) (*valueRef) = maxValue;
+			}
+			else if (isIn(x, y, valueSpinBtnDown->hitrectangle())) {
+				if (b == 0) {
+					(*valueRef) -= step;
+				}
+				else {
+					(*valueRef) -= bigStep;
+				}
+				if (*valueRef < minValue) (*valueRef) = minValue;
+			}
+		}
+};
+
+class ControlPanel: public Drawable, public Updatable, public Clickable {
 	public:
 		int x, y, width, height;
 		rgb_t color;
 		PlayButton* play;
-		ControlPanel(int xc, int yc, int widthc, int heightc, ButtonGrid* bg) {
+		ValueSpin* valueSpin;
+		ControlPanel(int xc, int yc, int widthc, int heightc, ButtonGrid* bg/*, int* bpmRef*/) {
 			x = xc;
 			y = yc;
 			width = widthc;
 			height = heightc;
 			play = new PlayButton(x + 20, y + 20, bg);
+			valueSpin = new ValueSpin(x + 200, y + 10, &(bg->bpm));
 		}
 		void draw(Context& ctx) {
 			ctx.emptyRectangle(x, y, width, height, SIZE_LINE_THIN, COLOR_LINE);
 			ctx.draw(*play);
+			ctx.draw(*valueSpin);
+		}
+		void update(int delta) {
+			valueSpin->update(delta);
 		}
 		rectangle_t hitrectangle() {return rectangle_t(x, y, width, height);}
-		void click(int x, int y) {
+		void click(int x, int y, int b) {
 			if (isIn(x, y, play->hitrectangle())) {
-				play->click(x, y);
+				play->click(x, y, 0);
+			}
+			if (isIn(x, y, valueSpin->hitrectangle())) {
+				valueSpin->click(x, y, b);
 			}
 		}
 };
@@ -535,13 +673,15 @@ class App: public SDLDevice {
 		}
 		void update(std::vector<Updatable*>& updatable) {
 			auto timeAfter = getTime();
-			if ((timeAfter - time) > 60000/bpm/4) {
+			int delta = timeAfter - time;
+			time = 2 * getTime() - timeAfter;
+			/*if ((timeAfter - time) > 60000/bpm/4) {
 				//printf("%d\n", timeAfter);
-				time = 2 * getTime() - timeAfter;
+				time = 2 * getTime() - timeAfter;*/
 				for (size_t i = 0; i < updatable.size(); i++) {
-					updatable.at(i)->update();
+					updatable.at(i)->update(delta);
 				}
-			}
+			//}
 		}
 		void render(std::vector<Drawable*>& drawable) {
 			ctx.clear(COLOR_BG);
@@ -561,7 +701,7 @@ class App: public SDLDevice {
 				for (size_t i = 0; i < clickable.size(); i++) {
 					Clickable* c = clickable.at(i);
 					if (isIn(x, y, c->hitrectangle())) {
-						c->click(x, y);
+						c->click(x, y, button);
 					}
 				}
 			}
