@@ -505,7 +505,7 @@ class PlayButton: public Drawable, public Clickable {
 		rectangle_t hitrectangle() {
 			return rectangle_t(x, y, width, width);
 		}
-		void click(int, int, int) {
+		void togglePlay() {
 			on = !on;
 			if (!on) {
 				bg->stop();
@@ -513,6 +513,9 @@ class PlayButton: public Drawable, public Clickable {
 			else {
 				bg->run();
 			}
+		}
+		void click(int, int, int) {
+			togglePlay();
 		}
 };
 
@@ -633,6 +636,8 @@ class App: public SDLDevice {
 		video_buffer_t data;
 		int bpm = 120;
 		
+		std::map<char, std::function<void()>> keyFunctionMap;
+		
 		App(int width, int height):
 			SDLDevice(width, height, "Application"),
 			data(rectangle_t(0, 0, width, height), COLOR_BG),
@@ -654,6 +659,9 @@ class App: public SDLDevice {
 			if (auto ptr = dynamic_cast<Drawable*>(object)) {drawable.push_back(ptr);}
 			if (auto ptr = dynamic_cast<Updatable*>(object)) {updatable.push_back(ptr);}
 			if (auto ptr = dynamic_cast<Clickable*>(object)) {clickable.push_back(ptr);}
+		}
+		void addKeyHandler(char key, std::function<void()> lambda) {
+			keyFunctionMap[key] = lambda;
 		}
 		~App() {
 			stop();
@@ -707,7 +715,32 @@ class App: public SDLDevice {
 			}
 			return true;
 		}
+		/**
+		 * Overloaded method for handling keys from SDL window
+		 * @param key  Number of the key pressed, defined in keys.h
+		 * @param pressed True if the key was pressed, false if the key was released
+		 * @return false if the program should end, true otherwise
+		 */
+		bool do_key_pressed(const int key, bool pressed) {
+			if (pressed) {
+				switch (key) {
+					case keys::key_escape: return false;
+				}
+    			std::map<char, std::function<void()>>::iterator it = keyFunctionMap.begin();
+				while(it != keyFunctionMap.end()) {
+					if (key == it->first) {
+						it->second();
+					}
+					it++;
+				}
+			}
+			return true;
+		}
 };
+
+void f() {
+	printf("COCK\n");
+}
 
 int main() {
 	App app(1024, 768);
@@ -721,6 +754,7 @@ int main() {
 	app.add(&bg);
 	app.add(&cp);
 	
+	app.addKeyHandler(keys::key_space, [cp](){cp.play->togglePlay();});
+	
 	app.launch();
 }
-
