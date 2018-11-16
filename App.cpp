@@ -1,4 +1,5 @@
 #include "iimavlib/SDLDevice.h"
+#include "iimavlib/WaveFile.h"
 #ifdef SYSTEM_LINUX
 #include <unistd.h>
 #endif
@@ -10,6 +11,7 @@
 #include <sys/timeb.h>
 #include <utility>      // std::pair, std::make_pair
 #include <string>       // std::string
+#include <list>       // std::list
 
 using std::unique_ptr;
 
@@ -127,6 +129,73 @@ void triangle(int x1, int y1, int x2, int y2, int x3, int y3, rgb_t color) {
 //void draw_polygon(iimavlib::video_buffer_t& data, const std::vector<iimavlib::rectangle_t>& points, iimavlib::rgb_t color)
 //void draw_line_steep(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, iimavlib::rgb_t color)
 //void draw_line_thick(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, int border, iimavlib::rgb_t color)
+};
+
+class SoundControl {
+	public:
+		SoundControl() {
+		}
+		bool loadFileData(std::string key, const std::string filename) {
+			try {
+				size_t samples = 44100;
+				
+				WaveFile wav(filename);
+				/*const audio_params_t params = wav.get_params();
+				if (params.rate != sampling_rate_t::rate_44kHz) throw std::runtime_error("Wrong sampling rate. 44kHz expected.");*/
+				std::vector<audio_sample_t> data(samples);
+				wav.read_data(data, samples);
+				data.resize(samples);
+				keySampleDataMap[key] = data;
+			}
+			catch (std::exception &e) {
+				return false;
+			}
+			return true;
+		}
+		void mixData(std::string key, std::list<std::string>& keysToMix) {
+			if (keysToMix.size() < 2) return;
+			std::list<std::string>::iterator it = keysToMix.begin();
+			std::advance(it, 0);
+			auto firstKey = *it;
+			auto secondKey = *++it;
+			std::vector<audio_sample_t> data = mix(keySampleDataMap[firstKey], keySampleDataMap[secondKey]);
+			for (int i = 2; i < keysToMix.size(); i++) {
+				data = mix(data, keySampleDataMap[*++it]);
+			}
+			keySampleDataMap[key] = data;
+		}
+	private:
+		std::map<std::string, std::vector<audio_sample_t>> keySampleDataMap;
+		
+		std::vector<audio_sample_t> mix(std::vector<audio_sample_t> &f, std::vector<audio_sample_t> &g) {
+			std::vector<audio_sample_t> out;
+	
+			for (int i = 0; i < f.size(); i++) {
+				audio_sample_t sample1 = f[i];
+				audio_sample_t sample2 = g[i];
+				float samplef1Left = sample1.left / 32768.0f;
+				float samplef2Left = sample2.left / 32768.0f;
+				float samplef1Right = sample1.right / 32768.0f;
+				float samplef2Right = sample2.right / 32768.0f;
+				float mixedLeft = samplef1Left + samplef2Left;
+				float mixedRight = samplef1Right + samplef2Right;
+				// reduce the volume a bit:
+				mixedLeft *= 0.8;
+				mixedRight *= 0.8;
+				// hard clipping
+				if (mixedLeft > 1.0f) mixedLeft = 1.0f;
+				if (mixedLeft < -1.0f) mixedLeft = -1.0f;
+				if (mixedRight > 1.0f) mixedRight = 1.0f;
+				if (mixedRight < -1.0f) mixedRight = -1.0f;
+				audio_sample_t outputSample;
+				outputSample.left = mixedLeft * 32768.0f;
+				outputSample.left = mixedRight * 32768.0f;
+		
+				out.push_back(outputSample);
+			}
+	
+			return out; 
+		}
 };
 
 class Text: Drawable {
@@ -737,10 +806,6 @@ class App: public SDLDevice {
 			return true;
 		}
 };
-
-void f() {
-	printf("COCK\n");
-}
 
 int main() {
 	App app(1024, 768);
