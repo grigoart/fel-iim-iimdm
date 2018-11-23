@@ -1,5 +1,7 @@
 #include "iimavlib/SDLDevice.h"
 #include "iimavlib/WaveFile.h"
+#include "iimavlib/AudioFilter.h"
+#include "iimavlib_high_api.h"
 #ifdef SYSTEM_LINUX
 #include <unistd.h>
 #endif
@@ -12,12 +14,14 @@
 #include <utility>      // std::pair, std::make_pair
 #include <string>       // std::string
 #include <list>       // std::list
+#include <thread>
 
 using std::unique_ptr;
 
 using namespace iimavlib;
 
 class Context;
+class SoundControl;
 class App;
 
 int A[] = {1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1};
@@ -69,6 +73,8 @@ int SIZE_LINE_THIN = 1;
 
 rgb_t COLOR_BG = rgb_t(25, 25, 25);
 rgb_t COLOR_LINE = rgb_t(255, 0, 0);
+		
+SoundControl* G_SC = nullptr;
 
 bool isIn(int x, int y, rectangle_t rect) {
 	return x > rect.x && x < rect.x + rect.width && y > rect.y && y < rect.y + rect.height;
@@ -131,10 +137,15 @@ void triangle(int x1, int y1, int x2, int y2, int x3, int y3, rgb_t color) {
 //void draw_line_thick(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, int border, iimavlib::rgb_t color)
 };
 
-class SoundControl {
+class SoundControl: public AudioFilter {
 	public:
-		SoundControl() {
+		SoundControl(std::vector<std::pair<std::string, std::string>> filesc): AudioFilter(pAudioFilter()), key(""), position(0) {
+			for (int i = 0; i < filesc.size(); i++) {
+				loadFileData(filesc[i].first, filesc[i].second);
+			}
+			G_SC = this;
 		}
+		
 		bool loadFileData(std::string key, const std::string filename) {
 			try {
 				size_t samples = 44100;
@@ -146,26 +157,52 @@ class SoundControl {
 				wav.read_data(data, samples);
 				data.resize(samples);
 				keySampleDataMap[key] = data;
+				printf("File loaded %s\n", filename.c_str());
 			}
 			catch (std::exception &e) {
+				printf("Could not load file %s\n", filename.c_str());
 				return false;
 			}
 			return true;
 		}
+		
 		void mixData(std::string key, std::list<std::string>& keysToMix) {
-			if (keysToMix.size() < 2) return;
+			if (keysToMix.size() < 1) {
+				keySampleDataMap[key] = std::vector<audio_sample_t>();
+				printf("No sample data. Skipping...\n");
+				return;
+			}
 			std::list<std::string>::iterator it = keysToMix.begin();
-			std::advance(it, 0);
+			if (keysToMix.size() < 2) {
+				keySampleDataMap[key] = keySampleDataMap[*it];
+				printf("Single sample data. Copy %s to %s\n", it->c_str(), key.c_str());
+				return;
+			}
+			//std::advance(it, 0);
 			auto firstKey = *it;
 			auto secondKey = *++it;
 			std::vector<audio_sample_t> data = mix(keySampleDataMap[firstKey], keySampleDataMap[secondKey]);
+				printf("Mixed %s with %s\n", firstKey.c_str(), secondKey.c_str());
 			for (int i = 2; i < keysToMix.size(); i++) {
 				data = mix(data, keySampleDataMap[*++it]);
+				printf("then mixed with %s\n", it->c_str());
 			}
 			keySampleDataMap[key] = data;
+			printf("%d sample datas mixed to %s\n", keysToMix.size(), key.c_str());
+		}
+		
+		void playSample(std::string key) {
+			this->key = key;
+			this->position = 0;
 		}
 	private:
 		std::map<std::string, std::vector<audio_sample_t>> keySampleDataMap;
+		/// Key of currently playing sample data
+		std::string key;
+		/// Next sample to be played for current sample data
+		size_t position;
+		/// Mutex to lock @em key and @em position
+		std::mutex position_mutex;
 		
 		std::vector<audio_sample_t> mix(std::vector<audio_sample_t> &f, std::vector<audio_sample_t> &g) {
 			std::vector<audio_sample_t> out;
@@ -180,8 +217,8 @@ class SoundControl {
 				float mixedLeft = samplef1Left + samplef2Left;
 				float mixedRight = samplef1Right + samplef2Right;
 				// reduce the volume a bit:
-				mixedLeft *= 0.8;
-				mixedRight *= 0.8;
+				mixedLeft *= 1;
+				mixedRight *= 1;
 				// hard clipping
 				if (mixedLeft > 1.0f) mixedLeft = 1.0f;
 				if (mixedLeft < -1.0f) mixedLeft = -1.0f;
@@ -189,16 +226,52 @@ class SoundControl {
 				if (mixedRight < -1.0f) mixedRight = -1.0f;
 				audio_sample_t outputSample;
 				outputSample.left = mixedLeft * 32768.0f;
-				outputSample.left = mixedRight * 32768.0f;
+				outputSample.right = mixedRight * 32768.0f;
 		
 				out.push_back(outputSample);
 			}
 	
 			return out; 
 		}
+
+		error_type_t do_process(audio_buffer_t& buffer) {
+			//if (is_stopped()) return error_type_t::failed;
+
+			// Get iterator to the data in the buffer
+			auto data = buffer.data.begin();
+
+			if (key == "" || (keySampleDataMap.count(key) == 0)) {
+				std::fill(data, data + buffer.valid_samples, 0);
+			} else {
+				std::unique_lock<std::mutex> lock(position_mutex);
+				
+				// Get ref. to the current drum's buffer
+				const auto& sampleData = keySampleDataMap[key];
+				size_t samples = keySampleDataMap[key].size();
+				size_t remaining = buffer.valid_samples;
+				size_t written = 0;
+				if (position < samples) {
+					// We still have some non-copied samples
+					const size_t avail = samples - position; // How many samples are available current drum
+					written = (avail >= remaining) ? remaining : avail; // We will copy this count of samples.
+					auto first = sampleData.cbegin() + position;		// Iterator to first sample to copy
+					auto last = (avail >= remaining) ? first + remaining : sampleData.cend(); // Iterator after the last sample that will be written
+					std::copy(first, last, data); // Copy the samples to the buffer
+					position += written; // Advance the drum's buffer position
+					remaining -= written;
+				} else {
+					// We've already copied all the sample, so let's set current drum to none
+					key = "";
+					position = 0;
+				}
+				// Fill the rest of the buffer (if there's still some space) with zeroes
+				std::fill(data + written, data + written + remaining, 0);
+			}
+			return error_type_t::ok;
+		}
 };
 
-class Text: Drawable {
+class Text: public Drawable {
 	public:
 		int x, y;
 		int size = 2;
@@ -473,12 +546,14 @@ class ButtonGrid: public Drawable, public Updatable, public Clickable {
 		int x, y;
 		int countX, countY;
 		HeadCol* h;
+		SoundControl* sc;
 		std::vector<ButtonCol> v;
 		int active = -1;
 		bool running = false;
 		int passedTime = 0;
 		int bpm = 120;
-		ButtonGrid(int xc, int yc, int countXc, std::vector<std::string>& captions) {
+		ButtonGrid(SoundControl& scc, int xc, int yc, int countXc, std::vector<std::string>& captions) {
+			sc = &scc;
 			x = xc;
 			y = yc;
 			countX = countXc;
@@ -524,6 +599,7 @@ class ButtonGrid: public Drawable, public Updatable, public Clickable {
 				v.at(active).deactivate();
 			}
 			v.at(index).activate();
+			sc->playSample("c" + std::to_string(index));
 			active = index;
 		}
 		void deactivate() {
@@ -538,6 +614,13 @@ class ButtonGrid: public Drawable, public Updatable, public Clickable {
 			running = false;
 		};
 		void run() {
+			for (int i = 0; i < v.size(); i++) {
+				std::list<std::string> activeLines;
+				for (int j = 0; j < v[i].b.size(); j++) {
+					if (v[i].b[j].on) activeLines.push_back("f" + std::to_string(j));
+				}
+				sc->mixData("c" + std::to_string(i), activeLines);
+			}
 			running = true;
 		};
 		~ButtonGrid() {
@@ -707,11 +790,25 @@ class App: public SDLDevice {
 		
 		std::map<char, std::function<void()>> keyFunctionMap;
 		
-		App(int width, int height):
+		App(SoundControl* scc, int width, int height, std::vector<std::pair<std::string, std::string>> files):
 			SDLDevice(width, height, "Application"),
 			data(rectangle_t(0, 0, width, height), COLOR_BG),
 			ctx(dynamic_cast<SDLDevice&>(*this), data) {
-				
+			printf("START CONSTRUCTOR");
+			std::vector<std::string> captions;
+			for (int i = 0; i < files.size(); i++) {
+				captions.push_back(files[i].first);
+			}
+			ButtonGrid bg(*scc, 25, 75, 16, captions);
+
+			ControlPanel cp(0, 500, WIN_W, 100, &bg);
+
+			add(&bg);
+			add(&cp);
+
+			addKeyHandler(keys::key_space, [cp](){cp.play->togglePlay();});
+			
+			launch();
 		}
 		void launch() {
 			start();
@@ -808,18 +905,38 @@ class App: public SDLDevice {
 };
 
 int main() {
-	App app(1024, 768);
-	
-	std::vector<std::string> captions;
-	captions.push_back("DEVICE 1"); captions.push_back("DRUMS"); captions.push_back("KICK"); captions.push_back("SNARE"); captions.push_back("HAT"); captions.push_back("CLAP");
-	ButtonGrid bg(25, 75, 16, captions);
-	
-	ControlPanel cp(0, 500, WIN_W, 100, &bg);
-	
-	app.add(&bg);
-	app.add(&cp);
-	
-	app.addKeyHandler(keys::key_space, [cp](){cp.play->togglePlay();});
-	
-	app.launch();
+	try {
+		std::vector<std::pair<std::string, std::string>> files({
+			std::pair<std::string, std::string>("f1", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum0.wav"),
+			std::pair<std::string, std::string>("f2", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum1.wav"),
+			std::pair<std::string, std::string>("f3", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum2.wav")
+		});
+		
+		std::thread t1([files](){
+			printf("INSIDE BEFORE 1");
+			audio_id_t device_id = static_cast<audio_id_t>("hw:0,0"); //iimavlib::PlatformDevice::default_device();
+			audio_params_t params;
+			params.rate = sampling_rate_t::rate_44kHz;
+			auto sink = filter_chain<SoundControl>(files)
+					.add<PlatformSink>(device_id)
+					.sink();
+			sink->run();
+			printf("INSIDE AFTER 1");
+		});
+		
+		usleep(100000);
+		std::thread t2([G_SC, files](){
+			printf("INSIDE BEFORE 2");
+			App app(G_SC, 1024, 768, files);
+			printf("INSIDE AFTER 2");
+		});
+		
+		t1.detach();
+		printf("\nT1 FINISHED\n");
+		t2.join();
+		printf("\nT2 FINISHED\n");
+	}
+	catch (std::exception& e) {
+		printf("Can not start application\n");
+	}
 }
