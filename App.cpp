@@ -157,7 +157,9 @@ class SoundControl: public AudioFilter {
 				wav.read_data(data, samples);
 				data.resize(samples);
 				keySampleDataMap[key] = data;
-				printf("File loaded %s\n", filename.c_str());
+				printf("File loaded %s: rate_enum_index=%d\n", filename.c_str(), wav.get_params().rate/*, params.format, params.num_channels*/);
+				
+//			if (params.format != sampling_format_t::format_16bit_signed) throw std::runtime_error("Wrong sampling format. Signed 16bits expected.");
 			}
 			catch (std::exception &e) {
 				printf("Could not load file %s\n", filename.c_str());
@@ -168,7 +170,7 @@ class SoundControl: public AudioFilter {
 		
 		void mixData(std::string key, std::list<std::string>& keysToMix) {
 			if (keysToMix.size() < 1) {
-				keySampleDataMap[key] = std::vector<audio_sample_t>();
+				keySampleDataMap[key] = std::vector<audio_sample_t>(0);
 				printf("No sample data. Skipping...\n");
 				return;
 			}
@@ -233,6 +235,13 @@ class SoundControl: public AudioFilter {
 	
 			return out; 
 		}
+		
+		template<class InputIt, class OutputIt>
+		void stdcopysum(InputIt first, InputIt last, OutputIt d_first) {
+			while (first != last) {
+				*d_first++ = *first++;
+			}
+		}
 
 		error_type_t do_process(audio_buffer_t& buffer) {
 			//if (is_stopped()) return error_type_t::failed;
@@ -256,7 +265,7 @@ class SoundControl: public AudioFilter {
 					written = (avail >= remaining) ? remaining : avail; // We will copy this count of samples.
 					auto first = sampleData.cbegin() + position;		// Iterator to first sample to copy
 					auto last = (avail >= remaining) ? first + remaining : sampleData.cend(); // Iterator after the last sample that will be written
-					std::copy(first, last, data); // Copy the samples to the buffer
+					stdcopysum(first, last, data); // Copy the samples to the buffer
 					position += written; // Advance the drum's buffer position
 					remaining -= written;
 				} else {
@@ -384,7 +393,7 @@ class Button: public Drawable {
 			width = widthc;
 			height = heightc;
 			color = colorc;
-			on = (rand() % 2);
+			on = false;//(rand() % 2);
 		}
 		void draw(Context& ctx) {
 			if (active) {
@@ -907,13 +916,12 @@ class App: public SDLDevice {
 int main() {
 	try {
 		std::vector<std::pair<std::string, std::string>> files({
-			std::pair<std::string, std::string>("f1", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum0.wav"),
-			std::pair<std::string, std::string>("f2", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum1.wav"),
-			std::pair<std::string, std::string>("f3", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum2.wav")
+			std::pair<std::string, std::string>("f0", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum0.wav"),
+			std::pair<std::string, std::string>("f1", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum1.wav"),
+			std::pair<std::string, std::string>("f2", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum2.wav")
 		});
 		
 		std::thread t1([files](){
-			printf("INSIDE BEFORE 1");
 			audio_id_t device_id = static_cast<audio_id_t>("hw:0,0"); //iimavlib::PlatformDevice::default_device();
 			audio_params_t params;
 			params.rate = sampling_rate_t::rate_44kHz;
@@ -921,14 +929,11 @@ int main() {
 					.add<PlatformSink>(device_id)
 					.sink();
 			sink->run();
-			printf("INSIDE AFTER 1");
 		});
 		
 		usleep(100000);
 		std::thread t2([G_SC, files](){
-			printf("INSIDE BEFORE 2");
 			App app(G_SC, 1024, 768, files);
-			printf("INSIDE AFTER 2");
 		});
 		
 		t1.detach();
