@@ -68,10 +68,12 @@ int COLON[] = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
 int WIN_W = 1024;
 int WIN_H = 768;
 
+int SIZE_LINE_BOLDEST = 5;
 int SIZE_LINE_BOLD = 3;
 int SIZE_LINE_THIN = 1;
 
 rgb_t COLOR_BG = rgb_t(25, 25, 25);
+rgb_t COLOR_BG_LIGHTER = rgb_t(35, 35, 35);
 rgb_t COLOR_LINE = rgb_t(255, 0, 0);
 		
 SoundControl* G_SC = nullptr;
@@ -169,6 +171,7 @@ class SoundControl: public AudioFilter {
 		}
 		
 		void mixData(std::string key, std::list<std::string>& keysToMix) {
+			std::unique_lock<std::mutex> lock(position_mutex);
 			if (keysToMix.size() < 1) {
 				keySampleDataMap[key] = std::vector<audio_sample_t>(0);
 				printf("No sample data. Skipping...\n");
@@ -385,19 +388,23 @@ class Button: public Drawable {
 	public:
 		int x, y, width, height;
 		rgb_t color;
+		rgb_t fillColor;
 		bool active = false;
 		bool on = false;
-		Button(int xc, int yc, int widthc, int heightc, rgb_t colorc) {
+		Button(int xc, int yc, int widthc, int heightc, rgb_t colorc, rgb_t fillColorc = COLOR_BG) {
 			x = xc;
 			y = yc;
 			width = widthc;
 			height = heightc;
 			color = colorc;
+			fillColor = fillColorc;
 			on = false;//(rand() % 2);
 		}
 		void draw(Context& ctx) {
 			if (active) {
 				ctx.rectangle(x, y, width, height, rgb_t(color.r / 2, color.g / 2, color.b / 2));
+			} else {
+				ctx.rectangle(x, y, width, height, fillColor);
 			}
 			ctx.emptyRectangle(x, y, width, height, (on) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, color);
 		}
@@ -481,12 +488,12 @@ class ButtonCol: public Drawable, public Clickable {
 		int bGap = 5;
 		rgb_t bColorAlt = rgb_t(175, 0, 0);
 		std::vector<Button> b;
-		ButtonCol(int xc, int yc, int countc) {
+		ButtonCol(int xc, int yc, int countc, rgb_t fillColor = COLOR_BG) {
 			x = xc;
 			y = yc;
 			count = countc;
 			for (size_t i = 0; i < count; i++) {
-				b.push_back(Button(x, y + (bSize + bGap) * i, bSize, bSize, COLOR_LINE));
+				b.push_back(Button(x, y + (bSize + bGap) * i, bSize, bSize, COLOR_LINE, fillColor));
 			}
 		}
 		void draw(Context& ctx) {
@@ -569,7 +576,7 @@ class ButtonGrid: public Drawable, public Updatable, public Clickable {
 			countY = captions.size();
 			h = new HeadCol(x, y, captions);
 			for (int j = 0; j < countX; j++) {
-				v.push_back(ButtonCol(x + h->bGap + h->bWidth + j * 35, y, countY));
+				v.push_back(ButtonCol(x + h->bGap + h->bWidth + j * 35, y, countY, (j % 4 == 0) ? COLOR_BG_LIGHTER : COLOR_BG));
 			}
 		}
 		void draw(Context& ctx) {
@@ -909,13 +916,19 @@ class App: public SDLDevice {
 		}
 };
 
-int main() {
+int main(int argc, char **argv) {
 	try {
-		std::vector<std::pair<std::string, std::string>> files({
-			std::pair<std::string, std::string>("f0", "/home/dsv/Downloads/mm1/iimavlib-master/data/min_kick_17_F.wav"),
-			std::pair<std::string, std::string>("f1", "/home/dsv/Downloads/mm1/iimavlib-master/data/Hip-Hop-Snare-1.wav"),
-			std::pair<std::string, std::string>("f2", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum2.wav")
-		});
+		std::vector<std::pair<std::string, std::string>> files;
+		
+		if(argc > 1) { 
+		    for(int counter = 1; counter < argc; counter++) 
+		        files.push_back(std::pair<std::string, std::string>("f" + std::to_string(counter - 1), argv[counter])); 
+		}
+		else {
+			files.push_back(std::pair<std::string, std::string>("f0", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum0.wav"));
+			files.push_back(std::pair<std::string, std::string>("f1", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum1.wav"));
+			files.push_back(std::pair<std::string, std::string>("f2", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum2.wav"));
+		}
 		
 		std::vector<std::string> captions;
 		for (size_t i = 0; i < files.size(); i++) {
