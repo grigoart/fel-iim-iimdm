@@ -799,15 +799,11 @@ class App: public SDLDevice {
 		
 		std::map<char, std::function<void()>> keyFunctionMap;
 		
-		App(SoundControl* scc, int width, int height, std::vector<std::pair<std::string, std::string>> files):
+		App(SoundControl* scc, int width, int height, std::vector<std::string> captions):
 			SDLDevice(width, height, "Application"),
 			data(rectangle_t(0, 0, width, height), COLOR_BG),
 			ctx(dynamic_cast<SDLDevice&>(*this), data) {
-			printf("START CONSTRUCTOR");
-			std::vector<std::string> captions;
-			for (int i = 0; i < files.size(); i++) {
-				captions.push_back(files[i].first);
-			}
+			
 			ButtonGrid bg(*scc, 25, 75, 16, captions);
 
 			ControlPanel cp(0, 500, WIN_W, 100, &bg);
@@ -916,10 +912,18 @@ class App: public SDLDevice {
 int main() {
 	try {
 		std::vector<std::pair<std::string, std::string>> files({
-			std::pair<std::string, std::string>("f0", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum0.wav"),
-			std::pair<std::string, std::string>("f1", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum1.wav"),
+			std::pair<std::string, std::string>("f0", "/home/dsv/Downloads/mm1/iimavlib-master/data/min_kick_17_F.wav"),
+			std::pair<std::string, std::string>("f1", "/home/dsv/Downloads/mm1/iimavlib-master/data/Hip-Hop-Snare-1.wav"),
 			std::pair<std::string, std::string>("f2", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum2.wav")
 		});
+		
+		std::vector<std::string> captions;
+		for (size_t i = 0; i < files.size(); i++) {
+			std::string path = files[i].second;
+			auto slash = path.find_last_of("\\/");
+			auto dot = path.find_last_of("\\.");
+			captions.push_back(path.substr(slash + 1, dot - slash - 1).c_str());
+		};
 		
 		std::thread t1([files](){
 			audio_id_t device_id = static_cast<audio_id_t>("hw:0,0"); //iimavlib::PlatformDevice::default_device();
@@ -932,8 +936,8 @@ int main() {
 		});
 		
 		usleep(100000);
-		std::thread t2([G_SC, files](){
-			App app(G_SC, 1024, 768, files);
+		std::thread t2([G_SC, captions](){
+			App app(G_SC, 1024, 768, captions);
 		});
 		
 		t1.detach();
