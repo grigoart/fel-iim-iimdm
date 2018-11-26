@@ -209,19 +209,14 @@ class SoundControl: public AudioFilter {
 		/// Mutex to lock @em key and @em position
 		std::mutex position_mutex;
 		
-		std::vector<audio_sample_t> mix(std::vector<audio_sample_t> &f, std::vector<audio_sample_t> &g) {
-			std::vector<audio_sample_t> out;
-	
-			for (int i = 0; i < f.size(); i++) {
-				audio_sample_t sample1 = f[i];
-				audio_sample_t sample2 = g[i];
+		audio_sample_t mixSamples(audio_sample_t& sample1, audio_sample_t& sample2) {
 				float samplef1Left = sample1.left / 32768.0f;
 				float samplef2Left = sample2.left / 32768.0f;
 				float samplef1Right = sample1.right / 32768.0f;
 				float samplef2Right = sample2.right / 32768.0f;
 				float mixedLeft = samplef1Left + samplef2Left;
 				float mixedRight = samplef1Right + samplef2Right;
-				// reduce the volume a bit:
+				// reduce the volume [?]
 				mixedLeft *= 1;
 				mixedRight *= 1;
 				// hard clipping
@@ -232,8 +227,17 @@ class SoundControl: public AudioFilter {
 				audio_sample_t outputSample;
 				outputSample.left = mixedLeft * 32768.0f;
 				outputSample.right = mixedRight * 32768.0f;
+				return outputSample;
+		}
 		
-				out.push_back(outputSample);
+		std::vector<audio_sample_t> mix(std::vector<audio_sample_t> &f, std::vector<audio_sample_t> &g) {
+			std::vector<audio_sample_t> out;
+	
+			for (int i = 0; i < f.size(); i++) {
+				audio_sample_t sample1 = f[i];
+				audio_sample_t sample2 = g[i];
+		
+				out.push_back(mixSamples(sample1, sample2));
 			}
 	
 			return out; 
