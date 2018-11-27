@@ -1,3 +1,6 @@
+// cd /home/dsv/Downloads/mm1/iimavlib-master/build
+// ./bin/app ../data/drum0.wav ../data/drum1.wav ../data/drum2.wav ../data/min_kick_17_F.wav ../data/Hip-Hop-Snare-1.wav
+
 #include "iimavlib/SDLDevice.h"
 #include "iimavlib/WaveFile.h"
 #include "iimavlib/AudioFilter.h"
@@ -115,53 +118,68 @@ class Context {
 		int render() {
 			return sdl->blit(*data);
 		}
-void clear(rgb_t color) {data->clear(color);}
-void pixel(int x, int y, rgb_t color) {(*data)(x, y) = color;}
-void line(int x0, int y0, int x1, int y1, rgb_t color) {draw_line(*data, rectangle_t(x0,y0), rectangle_t(x1,y1), color);}
-void circle(int x, int y, int r, rgb_t color) {circle(x, y, 2 * r, 2 * r, color);}
-void circle(int x, int y, int width, int height, rgb_t color) {draw_circle(*data, rectangle_t(x, y, x + width, y + height), color);}
-void rectangle(int x, int y, int width, int height, rgb_t color) {draw_rectangle(*data, rectangle_t(x, y, width, height), color);}
-void emptyRectangle(int x, int y, int width, int height, int border, rgb_t color) {draw_empty_rectangle(*data, rectangle_t(x, y, width, height), border, color);}
-void emptyRectangle(int x, int y, int width, int height, rgb_t color) {emptyRectangle(x, y, width, height, 1, color);}
-void polyline(const std::vector<rectangle_t>& points, rgb_t color) {draw_polyline(*data, points, color);}
-void polygon(const std::vector<rectangle_t>& points, rgb_t color) {draw_polyline(*data, points, color);}
-void triangle(int x1, int y1, int x2, int y2, int x3, int y3, rgb_t color) {
-	std::vector<rectangle_t> v;
-	v.push_back(rectangle_t(x1, y1, 0, 0));
-	v.push_back(rectangle_t(x2, y2, 0, 0));
-	v.push_back(rectangle_t(x3, y3, 0, 0));
-	v.push_back(rectangle_t(x1, y1, 0, 0));
-	polygon(v, color);
+		void clear(rgb_t color) {data->clear(color);}
+		void pixel(int x, int y, rgb_t color) {(*data)(x, y) = color;}
+		void line(int x0, int y0, int x1, int y1, rgb_t color) {draw_line(*data, rectangle_t(x0,y0), rectangle_t(x1,y1), color);}
+		void circle(int x, int y, int r, rgb_t color) {circle(x, y, 2 * r, 2 * r, color);}
+		void circle(int x, int y, int width, int height, rgb_t color) {draw_circle(*data, rectangle_t(x, y, x + width, y + height), color);}
+		void rectangle(int x, int y, int width, int height, rgb_t color) {draw_rectangle(*data, rectangle_t(x, y, width, height), color);}
+		void emptyRectangle(int x, int y, int width, int height, int border, rgb_t color) {draw_empty_rectangle(*data, rectangle_t(x, y, width, height), border, color);}
+		void emptyRectangle(int x, int y, int width, int height, rgb_t color) {emptyRectangle(x, y, width, height, 1, color);}
+		void polyline(const std::vector<rectangle_t>& points, rgb_t color) {draw_polyline(*data, points, color);}
+		void polygon(const std::vector<rectangle_t>& points, rgb_t color) {draw_polyline(*data, points, color);}
+		void triangle(int x1, int y1, int x2, int y2, int x3, int y3, rgb_t color) {
+			std::vector<rectangle_t> v;
+			v.push_back(rectangle_t(x1, y1, 0, 0));
+			v.push_back(rectangle_t(x2, y2, 0, 0));
+			v.push_back(rectangle_t(x3, y3, 0, 0));
+			v.push_back(rectangle_t(x1, y1, 0, 0));
+			polygon(v, color);
+		};
+		//void draw_line_steep(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, iimavlib::rgb_t color)
+		//void draw_line_thick(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, int border, iimavlib::rgb_t color)
 };
-//void draw_polyline(iimavlib::video_buffer_t& data, const std::vector<iimavlib::rectangle_t>& points, iimavlib::rgb_t color)
-//void draw_polygon(iimavlib::video_buffer_t& data, const std::vector<iimavlib::rectangle_t>& points, iimavlib::rgb_t color)
-//void draw_line_steep(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, iimavlib::rgb_t color)
-//void draw_line_thick(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, int border, iimavlib::rgb_t color)
+
+class SampleTrack {
+	public:
+		std::vector<audio_sample_t> sampleData;
+		int position = 0;
+
+		SampleTrack(std::vector<audio_sample_t> sampleDatac): sampleData(sampleDatac) {
+		}
+
+		audio_sample_t getCurrentSample() {
+			return (position >= sampleData.size()) ? audio_sample_t() : sampleData[position];
+		}
+
+		size_t size() {
+			return sampleData.size();
+		}
+
+		bool finished() {
+			return position > size();
+		}
 };
 
 class SoundControl: public AudioFilter {
 	public:
-		SoundControl(std::vector<std::pair<std::string, std::string>> filesc): AudioFilter(pAudioFilter()), key(""), position(0) {
+		SoundControl(std::vector<std::string> filesc): AudioFilter(pAudioFilter()) {
 			for (int i = 0; i < filesc.size(); i++) {
-				loadFileData(filesc[i].first, filesc[i].second);
+				loadFileData(filesc[i]);
 			}
 			G_SC = this;
 		}
 		
-		bool loadFileData(std::string key, const std::string filename) {
+		bool loadFileData(const std::string filename) {
 			try {
 				size_t samples = 44100;
 				
 				WaveFile wav(filename);
-				/*const audio_params_t params = wav.get_params();
-				if (params.rate != sampling_rate_t::rate_44kHz) throw std::runtime_error("Wrong sampling rate. 44kHz expected.");*/
 				std::vector<audio_sample_t> data(samples);
 				wav.read_data(data, samples);
 				data.resize(samples);
-				keySampleDataMap[key] = data;
+				sampleTracks.push_back(SampleTrack(data));
 				printf("File loaded %s: rate_enum_index=%d\n", filename.c_str(), wav.get_params().rate/*, params.format, params.num_channels*/);
-				
-//			if (params.format != sampling_format_t::format_16bit_signed) throw std::runtime_error("Wrong sampling format. Signed 16bits expected.");
 			}
 			catch (std::exception &e) {
 				printf("Could not load file %s\n", filename.c_str());
@@ -170,46 +188,17 @@ class SoundControl: public AudioFilter {
 			return true;
 		}
 		
-		void mixData(std::string key, std::list<std::string>& keysToMix) {
-			std::unique_lock<std::mutex> lock(position_mutex);
-			if (keysToMix.size() < 1) {
-				keySampleDataMap[key] = std::vector<audio_sample_t>(0);
-				printf("No sample data. Skipping...\n");
-				return;
-			}
-			std::list<std::string>::iterator it = keysToMix.begin();
-			if (keysToMix.size() < 2) {
-				keySampleDataMap[key] = keySampleDataMap[*it];
-				printf("Single sample data. Copy %s to %s\n", it->c_str(), key.c_str());
-				return;
-			}
-			//std::advance(it, 0);
-			auto firstKey = *it;
-			auto secondKey = *++it;
-			std::vector<audio_sample_t> data = mix(keySampleDataMap[firstKey], keySampleDataMap[secondKey]);
-				printf("Mixed %s with %s\n", firstKey.c_str(), secondKey.c_str());
-			for (int i = 2; i < keysToMix.size(); i++) {
-				data = mix(data, keySampleDataMap[*++it]);
-				printf("then mixed with %s\n", it->c_str());
-			}
-			keySampleDataMap[key] = data;
-			printf("%d sample datas mixed to %s\n", keysToMix.size(), key.c_str());
-		}
-		
-		void playSample(std::string key) {
-			this->key = key;
-			this->position = 0;
+		void playSample(int index) {
+			playingSampleTracks.push_back(sampleTracks[index]);
 		}
 	private:
-		std::map<std::string, std::vector<audio_sample_t>> keySampleDataMap;
-		/// Key of currently playing sample data
-		std::string key;
-		/// Next sample to be played for current sample data
-		size_t position;
-		/// Mutex to lock @em key and @em position
+		std::vector<SampleTrack> playingSampleTracks;
+		// std::map<std::string, std::vector<audio_sample_t>> keySampleDataMap;
+		std::vector<SampleTrack> sampleTracks;
+
 		std::mutex position_mutex;
 		
-		audio_sample_t mixSamples(audio_sample_t& sample1, audio_sample_t& sample2) {
+		audio_sample_t mixSamples(const audio_sample_t& sample1, const audio_sample_t& sample2) {
 				float samplef1Left = sample1.left / 32768.0f;
 				float samplef2Left = sample2.left / 32768.0f;
 				float samplef1Right = sample1.right / 32768.0f;
@@ -229,59 +218,37 @@ class SoundControl: public AudioFilter {
 				outputSample.right = mixedRight * 32768.0f;
 				return outputSample;
 		}
-		
-		std::vector<audio_sample_t> mix(std::vector<audio_sample_t> &f, std::vector<audio_sample_t> &g) {
-			std::vector<audio_sample_t> out;
-	
-			for (int i = 0; i < f.size(); i++) {
-				audio_sample_t sample1 = f[i];
-				audio_sample_t sample2 = g[i];
-		
-				out.push_back(mixSamples(sample1, sample2));
-			}
-	
-			return out; 
-		}
-		
-		template<class InputIt, class OutputIt>
-		void stdcopysum(InputIt first, InputIt last, OutputIt d_first) {
-			while (first != last) {
-				*d_first++ = *first++;
+
+		int clearFinishedSampleTracks() {
+			for (size_t i = 0; i < playingSampleTracks.size();) {
+				if (playingSampleTracks[i].finished()) {
+					playingSampleTracks.erase(playingSampleTracks.begin() + i);
+				}
+				else {
+					i++;
+				}
 			}
 		}
 
 		error_type_t do_process(audio_buffer_t& buffer) {
-			//if (is_stopped()) return error_type_t::failed;
-
-			// Get iterator to the data in the buffer
+			std::unique_lock<std::mutex> lock(position_mutex);
 			auto data = buffer.data.begin();
-
-			if (key == "" || (keySampleDataMap.count(key) == 0)) {
-				std::fill(data, data + buffer.valid_samples, 0);
-			} else {
-				std::unique_lock<std::mutex> lock(position_mutex);
-				
-				// Get ref. to the current drum's buffer
-				const auto& sampleData = keySampleDataMap[key];
-				size_t samples = keySampleDataMap[key].size();
-				size_t remaining = buffer.valid_samples;
-				size_t written = 0;
-				if (position < samples) {
-					// We still have some non-copied samples
-					const size_t avail = samples - position; // How many samples are available current drum
-					written = (avail >= remaining) ? remaining : avail; // We will copy this count of samples.
-					auto first = sampleData.cbegin() + position;		// Iterator to first sample to copy
-					auto last = (avail >= remaining) ? first + remaining : sampleData.cend(); // Iterator after the last sample that will be written
-					stdcopysum(first, last, data); // Copy the samples to the buffer
-					position += written; // Advance the drum's buffer position
-					remaining -= written;
+			auto dataEnd = buffer.data.end();
+			// printf("Filling buffer: playingSampleTracks size = %d\n", playingSampleTracks.size());
+			while (data != dataEnd) {
+				clearFinishedSampleTracks();
+				if (playingSampleTracks.size() == 0) {
+					std::fill(data, dataEnd, 0);
+					return error_type_t::ok;
 				} else {
-					// We've already copied all the sample, so let's set current drum to none
-					key = "";
-					position = 0;
+					audio_sample_t sampleToWrite;
+					for (size_t i = 0; i < playingSampleTracks.size(); i++) {
+						sampleToWrite = mixSamples(sampleToWrite, playingSampleTracks[i].getCurrentSample());
+						// printf("Filling buffer: aded sample. Current position for [%d] is %d\n", i, playingSampleTracks[i].position);
+						playingSampleTracks[i].position++;
+					}
+					*data++ = sampleToWrite;
 				}
-				// Fill the rest of the buffer (if there's still some space) with zeroes
-				std::fill(data + written, data + written + remaining, 0);
 			}
 			return error_type_t::ok;
 		}
@@ -619,7 +586,11 @@ class ButtonGrid: public Drawable, public Updatable, public Clickable {
 				v.at(active).deactivate();
 			}
 			v.at(index).activate();
-			sc->playSample("c" + std::to_string(index));
+			for (size_t i = 0; i < v.at(index).b.size(); i++) {
+				if (v.at(index).b.at(i).active) {
+					sc->playSample(i);
+				}
+			}
 			active = index;
 		}
 		void deactivate() {
@@ -634,13 +605,13 @@ class ButtonGrid: public Drawable, public Updatable, public Clickable {
 			running = false;
 		};
 		void run() {
-			for (int i = 0; i < v.size(); i++) {
-				std::list<std::string> activeLines;
-				for (int j = 0; j < v[i].b.size(); j++) {
-					if (v[i].b[j].on) activeLines.push_back("f" + std::to_string(j));
-				}
-				sc->mixData("c" + std::to_string(i), activeLines);
-			}
+			// for (int i = 0; i < v.size(); i++) {
+			// 	std::list<std::string> activeLines;
+			// 	for (int j = 0; j < v[i].b.size(); j++) {
+			// 		if (v[i].b[j].on) activeLines.push_back("f" + std::to_string(j));
+			// 	}
+			// 	sc->mixData("c" + std::to_string(i), activeLines);
+			// }
 			running = true;
 		};
 		~ButtonGrid() {
@@ -922,21 +893,21 @@ class App: public SDLDevice {
 
 int main(int argc, char **argv) {
 	try {
-		std::vector<std::pair<std::string, std::string>> files;
+		std::vector<std::string> files;
 		
 		if(argc > 1) { 
 		    for(int counter = 1; counter < argc; counter++) 
-		        files.push_back(std::pair<std::string, std::string>("f" + std::to_string(counter - 1), argv[counter])); 
+		        files.push_back(argv[counter]); 
 		}
 		else {
-			files.push_back(std::pair<std::string, std::string>("f0", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum0.wav"));
-			files.push_back(std::pair<std::string, std::string>("f1", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum1.wav"));
-			files.push_back(std::pair<std::string, std::string>("f2", "/home/dsv/Downloads/mm1/iimavlib-master/data/drum2.wav"));
+			files.push_back("/home/dsv/Downloads/mm1/iimavlib-master/data/drum0.wav");
+			files.push_back("/home/dsv/Downloads/mm1/iimavlib-master/data/drum1.wav");
+			files.push_back("/home/dsv/Downloads/mm1/iimavlib-master/data/drum2.wav");
 		}
 		
 		std::vector<std::string> captions;
 		for (size_t i = 0; i < files.size(); i++) {
-			std::string path = files[i].second;
+			std::string path = files[i];
 			auto slash = path.find_last_of("\\/");
 			auto dot = path.find_last_of("\\.");
 			captions.push_back(path.substr(slash + 1, dot - slash - 1).c_str());
