@@ -27,46 +27,46 @@ class Context;
 class SoundControl;
 class App;
 
-int A[] = {1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1};
-int B[] = {1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0};
-int C[] = {0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1};
-int D[] = {1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0};
-int E[] = {1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1};
-int F[] = {1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0};
-int G[] = {0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1};
-int H[] = {1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1};
-int I[] = {1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1};
-int J[] = {0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1};
-int K[] = {1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1};
-int L[] = {1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1};
-int M[] = {1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1};
-int N[] = {1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1};
-int O[] = {1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1};
-int P[] = {1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0};
-int Q[] = {1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1};
-int R[] = {1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1};
-int S[] = {0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0};
-int T[] = {1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0};
-int U[] = {1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1};
-int V[] = {1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0};
-int W[] = {1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1};
-int X[] = {1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1};
-int Y[] = {1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0};
-int Z[] = {1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1};
-int N0[] = {1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1};
-int N1[] = {0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1};
-int N2[] = {1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1};
-int N3[] = {1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1};
-int N4[] = {1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1};
-int N5[] = {1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0};
-int N6[] = {0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1};
-int N7[] = {1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0};
-int N8[] = {1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1};
-int N9[] = {1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0};
-int SP[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-int MINUS[] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0};
-int PLUS[] = {0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0};
-int COLON[] = {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
+int A[]		=	{1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1};
+int B[]		=	{1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0};
+int C[]		=	{0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1};
+int D[]		=	{1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0};
+int E[]		=	{1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1};
+int F[]		=	{1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0};
+int G[]		=	{0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1};
+int H[]		=	{1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1};
+int I[]		=	{1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1};
+int J[]		=	{0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1};
+int K[]		=	{1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1};
+int L[]		=	{1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1};
+int M[]		=	{1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1};
+int N[]		=	{1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1};
+int O[]		=	{1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1};
+int P[]		=	{1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0};
+int Q[]		=	{1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1};
+int R[]		=	{1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1};
+int S[]		=	{0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0};
+int T[]		=	{1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0};
+int U[]		=	{1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1};
+int V[]		=	{1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0};
+int W[]		=	{1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1};
+int X[]		=	{1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1};
+int Y[]		=	{1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0};
+int Z[]		=	{1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1};
+int N0[]	=	{1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1};
+int N1[]	=	{0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1};
+int N2[]	=	{1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1};
+int N3[]	=	{1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1};
+int N4[]	=	{1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1};
+int N5[]	=	{1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0};
+int N6[]	=	{0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1};
+int N7[]	=	{1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0};
+int N8[]	=	{1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1};
+int N9[]	=	{1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0};
+int SP[]	=	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int MINUS[]	=	{0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0};
+int PLUS[]	=	{0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0};
+int COLON[]	=	{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
 
 int WIN_W = 1024;
 int WIN_H = 768;
@@ -78,6 +78,8 @@ int SIZE_LINE_THIN = 1;
 rgb_t COLOR_BG = rgb_t(25, 25, 25);
 rgb_t COLOR_BG_LIGHTER = rgb_t(35, 35, 35);
 rgb_t COLOR_LINE = rgb_t(255, 0, 0);
+
+float DEFAULT_VOLUME = 0.5f;
 
 SoundControl* G_SC = nullptr;
 
@@ -144,8 +146,9 @@ class SampleTrack {
 public:
 	std::vector<audio_sample_t> sampleData;
 	int position = 0;
+	float volume;
 
-	SampleTrack(std::vector<audio_sample_t> sampleDatac): sampleData(sampleDatac) {
+	SampleTrack(std::vector<audio_sample_t> sampleDatac, float volumec = DEFAULT_VOLUME): sampleData(sampleDatac), volume(volumec) {
 	}
 
 	audio_sample_t getCurrentSample() {
@@ -199,13 +202,13 @@ private:
 
 	std::mutex position_mutex;
 
-	audio_sample_t mixSamples(const audio_sample_t& sample1, const audio_sample_t& sample2) {
+	audio_sample_t mixSamples(const audio_sample_t& sample1, const float& volume1, const audio_sample_t& sample2, const float& volume2) {
 		float samplef1Left = sample1.left / 32768.0f;
 		float samplef2Left = sample2.left / 32768.0f;
 		float samplef1Right = sample1.right / 32768.0f;
 		float samplef2Right = sample2.right / 32768.0f;
-		float mixedLeft = samplef1Left + samplef2Left;
-		float mixedRight = samplef1Right + samplef2Right;
+		float mixedLeft = samplef1Left * volume1 + samplef2Left * volume2;
+		float mixedRight = samplef1Right * volume1 + samplef2Right * volume2;
 		// reduce the volume [?]
 		mixedLeft *= 1;
 		mixedRight *= 1;
@@ -242,8 +245,9 @@ private:
 				return error_type_t::ok;
 			} else {
 				audio_sample_t sampleToWrite;
+				float volume = DEFAULT_VOLUME;
 				for (size_t i = 0; i < playingSampleTracks.size(); i++) {
-					sampleToWrite = mixSamples(sampleToWrite, playingSampleTracks[i].getCurrentSample());
+					sampleToWrite = mixSamples(sampleToWrite, volume, playingSampleTracks[i].getCurrentSample(), playingSampleTracks[i].volume);
 					playingSampleTracks[i].position++;
 				}
 				*data++ = sampleToWrite;
@@ -457,7 +461,7 @@ public:
 	int bSize = 30;
 	int bGap = 5;
 	rgb_t bColorAlt = rgb_t(175, 0, 0);
-	rgb_t lightColor = rgb_t(0, 0, 50);
+	rgb_t lightColor = rgb_t(200, 200, 200);
 	std::vector<Button> b;
 	bool highlited = false;
 	ButtonCol(int xc, int yc, int countc, rgb_t fillColor = COLOR_BG) {
@@ -473,7 +477,7 @@ public:
 			b.at(i).draw(ctx);
 		}
 		if (highlited) {
-			ctx.emptyRectangle(x, y, bSize, (bSize + bGap) * count - bGap, SIZE_LINE_BOLDEST, lightColor);
+			ctx.emptyRectangle(x, y, bSize, (bSize + bGap) * count - bGap, SIZE_LINE_BOLD, lightColor);
 		}
 	}
 	rectangle_t hitrectangle() {
