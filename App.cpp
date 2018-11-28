@@ -172,7 +172,7 @@ public:
 
 	bool loadFileData(const std::string filename) {
 		try {
-			size_t timeDurationRestriction = 60; // 120 sec
+			size_t timeDurationRestriction = 60; // 60 sec
 			size_t samples = 44100;
 			size_t length = samples * timeDurationRestriction;
 
@@ -195,7 +195,6 @@ public:
 	}
 private:
 	std::vector<SampleTrack> playingSampleTracks;
-	// std::map<std::string, std::vector<audio_sample_t>> keySampleDataMap;
 	std::vector<SampleTrack> sampleTracks;
 
 	std::mutex position_mutex;
@@ -236,7 +235,6 @@ private:
 		std::unique_lock<std::mutex> lock(position_mutex);
 		auto data = buffer.data.begin();
 		auto dataEnd = buffer.data.end();
-		// printf("Filling buffer: playingSampleTracks size = %d\n", playingSampleTracks.size());
 		while (data != dataEnd) {
 			clearFinishedSampleTracks();
 			if (playingSampleTracks.size() == 0) {
@@ -246,7 +244,6 @@ private:
 				audio_sample_t sampleToWrite;
 				for (size_t i = 0; i < playingSampleTracks.size(); i++) {
 					sampleToWrite = mixSamples(sampleToWrite, playingSampleTracks[i].getCurrentSample());
-					// printf("Filling buffer: aded sample. Current position for [%d] is %d\n", i, playingSampleTracks[i].position);
 					playingSampleTracks[i].position++;
 				}
 				*data++ = sampleToWrite;
@@ -371,7 +368,7 @@ public:
 		height = heightc;
 		color = colorc;
 		fillColor = fillColorc;
-		on = false;//(rand() % 2);
+		on = false;
 	}
 	void draw(Context& ctx) {
 		if (active) {
@@ -607,13 +604,6 @@ public:
 		running = false;
 	};
 	void run() {
-		// for (int i = 0; i < v.size(); i++) {
-		// 	std::list<std::string> activeLines;
-		// 	for (int j = 0; j < v[i].b.size(); j++) {
-		// 		if (v[i].b[j].on) activeLines.push_back("f" + std::to_string(j));
-		// 	}
-		// 	sc->mixData("c" + std::to_string(i), activeLines);
-		// }
 		running = true;
 	};
 	~ButtonGrid() {
@@ -748,7 +738,7 @@ public:
 	rgb_t color;
 	PlayButton* play;
 	ValueSpin* valueSpin;
-	ControlPanel(int xc, int yc, int widthc, int heightc, ButtonGrid* bg/*, int* bpmRef*/) {
+	ControlPanel(int xc, int yc, int widthc, int heightc, ButtonGrid* bg) {
 		x = xc;
 		y = yc;
 		width = widthc;
