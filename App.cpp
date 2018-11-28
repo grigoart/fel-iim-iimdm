@@ -359,7 +359,7 @@ public:
 	int x, y, width, height;
 	rgb_t color;
 	rgb_t fillColor;
-	bool active = false;
+	bool highlited = false;
 	bool on = false;
 	Button(int xc, int yc, int widthc, int heightc, rgb_t colorc, rgb_t fillColorc = COLOR_BG) {
 		x = xc;
@@ -371,7 +371,7 @@ public:
 		on = false;
 	}
 	void draw(Context& ctx) {
-		if (active) {
+		if (highlited) {
 			ctx.rectangle(x, y, width, height, rgb_t(color.r / 2, color.g / 2, color.b / 2));
 		} else {
 			ctx.rectangle(x, y, width, height, fillColor);
@@ -384,14 +384,14 @@ public:
 	void click(int, int, int) {
 		on = !on;
 	}
-	void activate() {
-		if (on) active = true;
+	void light() {
+		if (on) highlited = true;
 	}
-	void deactivate() {
-		active = false;
+	void dark() {
+		highlited = false;
 	}
 	void toggle() {
-		if (active) deactivate(); else activate();
+		if (highlited) dark(); else light();
 	}
 };
 
@@ -457,7 +457,9 @@ public:
 	int bSize = 30;
 	int bGap = 5;
 	rgb_t bColorAlt = rgb_t(175, 0, 0);
+	rgb_t lightColor = rgb_t(0, 0, 50);
 	std::vector<Button> b;
+	bool highlited = false;
 	ButtonCol(int xc, int yc, int countc, rgb_t fillColor = COLOR_BG) {
 		x = xc;
 		y = yc;
@@ -470,6 +472,9 @@ public:
 		for (size_t i = 0; i < count; i++) {
 			b.at(i).draw(ctx);
 		}
+		if (highlited) {
+			ctx.emptyRectangle(x, y, bSize, (bSize + bGap) * count - bGap, SIZE_LINE_BOLDEST, lightColor);
+		}
 	}
 	rectangle_t hitrectangle() {
 		return rectangle_t(x, y, bSize, (bSize + bGap) * count);
@@ -481,14 +486,16 @@ public:
 			}
 		}
 	}
-	void activate() {
+	void light() {
+		highlited = true;
 		for (size_t i = 0; i < count; i++) {
-			b.at(i).activate();
+			b.at(i).light();
 		}
 	}
-	void deactivate() {
+	void dark() {
+		highlited = false;
 		for (size_t i = 0; i < count; i++) {
-			b.at(i).deactivate();
+			b.at(i).dark();
 		}
 	}
 };
@@ -582,11 +589,11 @@ public:
 	}
 	void activate(int index) {
 		if (active != -1) {
-			v.at(active).deactivate();
+			v.at(active).dark();
 		}
-		v.at(index).activate();
+		v.at(index).light();
 		for (size_t i = 0; i < v.at(index).b.size(); i++) {
-			if (v.at(index).b.at(i).active) {
+			if (v.at(index).b.at(i).highlited) {
 				sc->playSample(i);
 			}
 		}
@@ -594,7 +601,7 @@ public:
 	}
 	void deactivate() {
 		if (active != -1) {
-			v.at(active).deactivate();
+			v.at(active).dark();
 			active = -1;
 		}
 	}
