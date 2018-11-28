@@ -144,28 +144,59 @@ public:
 
 class SampleTrack {
 public:
-	std::vector<audio_sample_t> sampleData;
-	int position = 0;
+	std::vector<audio_sample_t>* sampleData;
+	int position;
 	float volume;
 
-	SampleTrack(std::vector<audio_sample_t> sampleDatac, float volumec = DEFAULT_VOLUME): sampleData(sampleDatac), volume(volumec) {
+	SampleTrack(): volume(DEFAULT_VOLUME), position(0) {
+
+	}
+
+	SampleTrack(std::vector<audio_sample_t>& sampleDatac, float volumec = DEFAULT_VOLUME): volume(volumec), position(0) {
+		sampleData = new std::vector<audio_sample_t>(sampleDatac.size());
+		for (size_t i = 0; i < sampleDatac.size(); i++) {
+			sampleData->at(i) = sampleDatac[i];
+		}
+	}
+
+	SampleTrack* shallowClone() {
+		SampleTrack* sampleTrack = new SampleTrack();
+		sampleTrack->sampleData = sampleData;
+		sampleTrack->position = position;
+		sampleTrack->volume = volume;
+		return sampleTrack;
 	}
 
 	audio_sample_t getCurrentSample() {
-		return (position >= sampleData.size()) ? audio_sample_t() : sampleData[position];
+		audio_sample_t sample = (finished()) ? audio_sample_t() : sampleData->at(position);
+		float samplefLeft = sample.left / 32768.0f;
+		float samplefRight = sample.right / 32768.0f;
+		// change the volume
+		samplefLeft *= volume;
+		samplefRight *= volume;
+		// hard clipping
+		if (samplefLeft > 1.0f) samplefLeft = 1.0f;
+		if (samplefLeft < -1.0f) samplefLeft = -1.0f;
+		if (samplefRight > 1.0f) samplefRight = 1.0f;
+		if (samplefRight < -1.0f) samplefRight = -1.0f;
+		sample.left = samplefLeft * 32768.0f;
+		sample.right = samplefRight * 32768.0f;
+		return sample;
 	}
 
 	size_t size() {
-		return sampleData.size();
+		return sampleData->size();
 	}
 
 	bool finished() {
-		return position > size();
+		return position >= size();
 	}
 };
 
 class SoundControl: public AudioFilter {
 public:
+	float masterVolume = 0.8f;
+
 	SoundControl(std::vector<std::string> filesc): AudioFilter(pAudioFilter()) {
 		for (int i = 0; i < filesc.size(); i++) {
 			loadFileData(filesc[i]);
@@ -175,7 +206,7 @@ public:
 
 	bool loadFileData(const std::string filename) {
 		try {
-			size_t timeDurationRestriction = 60; // 60 sec
+			size_t timeDurationRestriction = 120; // 60 sec
 			size_t samples = 44100;
 			size_t length = samples * timeDurationRestriction;
 
@@ -183,6 +214,7 @@ public:
 			std::vector<audio_sample_t> data(length);
 			wav.read_data(data, length);
 			data.resize(length);
+
 			sampleTracks.push_back(SampleTrack(data));
 			printf("File loaded %s: rate_enum_index=%d\n", filename.c_str(), wav.get_params().rate/*, params.format, params.num_channels*/);
 		}
@@ -194,24 +226,30 @@ public:
 	}
 
 	void playSample(int index) {
-		playingSampleTracks.push_back(sampleTracks[index]);
+		playingSampleTracks.push_back(sampleTracks[index].shallowClone());
 	}
+
+	void forceStop() {
+		std::unique_lock<std::mutex> lock(position_mutex);
+		playingSampleTracks.clear();
+	}
+
 private:
-	std::vector<SampleTrack> playingSampleTracks;
+	std::vector<SampleTrack*> playingSampleTracks;
 	std::vector<SampleTrack> sampleTracks;
 
 	std::mutex position_mutex;
 
-	audio_sample_t mixSamples(const audio_sample_t& sample1, const float& volume1, const audio_sample_t& sample2, const float& volume2) {
+	audio_sample_t mixSamples(const audio_sample_t& sample1, const audio_sample_t& sample2) {
 		float samplef1Left = sample1.left / 32768.0f;
 		float samplef2Left = sample2.left / 32768.0f;
 		float samplef1Right = sample1.right / 32768.0f;
 		float samplef2Right = sample2.right / 32768.0f;
-		float mixedLeft = samplef1Left * volume1 + samplef2Left * volume2;
-		float mixedRight = samplef1Right * volume1 + samplef2Right * volume2;
+		float mixedLeft = samplef1Left + samplef2Left;
+		float mixedRight = samplef1Right + samplef2Right;
 		// reduce the volume [?]
-		mixedLeft *= 1;
-		mixedRight *= 1;
+		// mixedLeft *= 1;
+		// mixedRight *= 1;
 		// hard clipping
 		if (mixedLeft > 1.0f) mixedLeft = 1.0f;
 		if (mixedLeft < -1.0f) mixedLeft = -1.0f;
@@ -223,15 +261,9 @@ private:
 		return outputSample;
 	}
 
-	int clearFinishedSampleTracks() {
-		for (int i = 0; i < playingSampleTracks.size();) {
-			if (playingSampleTracks[i].finished()) {
-				playingSampleTracks.erase(playingSampleTracks.begin() + i);
-			}
-			else {
-				i++;
-			}
-		}
+	void adjustSampleVolume(audio_sample_t& sample) {
+		sample.left *= masterVolume;
+		sample.right *= masterVolume;
 	}
 
 	error_type_t do_process(audio_buffer_t& buffer) {
@@ -239,17 +271,21 @@ private:
 		auto data = buffer.data.begin();
 		auto dataEnd = buffer.data.end();
 		while (data != dataEnd) {
-			clearFinishedSampleTracks();
 			if (playingSampleTracks.size() == 0) {
 				std::fill(data, dataEnd, 0);
 				return error_type_t::ok;
 			} else {
 				audio_sample_t sampleToWrite;
-				float volume = DEFAULT_VOLUME;
-				for (size_t i = 0; i < playingSampleTracks.size(); i++) {
-					sampleToWrite = mixSamples(sampleToWrite, volume, playingSampleTracks[i].getCurrentSample(), playingSampleTracks[i].volume);
-					playingSampleTracks[i].position++;
+				for (size_t i = 0; i < playingSampleTracks.size();) {
+					sampleToWrite = mixSamples(sampleToWrite, playingSampleTracks[i]->getCurrentSample());
+					playingSampleTracks[i]->position++;
+					if (playingSampleTracks[i]->finished()) {
+						playingSampleTracks.erase(playingSampleTracks.begin() + i);
+					} else {
+						i++;
+					}
 				}
+				adjustSampleVolume(sampleToWrite);
 				*data++ = sampleToWrite;
 			}
 		}
@@ -611,6 +647,7 @@ public:
 	}
 	void stop() {
 		deactivate();
+		sc->forceStop();
 		active = -1;
 		running = false;
 	};
@@ -797,6 +834,8 @@ public:
 		add(&cp);
 
 		addKeyHandler(keys::key_space, [cp]() {cp.play->togglePlay();});
+		addKeyHandler(keys::key_plus, [scc]() {scc->masterVolume += 0.05f; if (scc->masterVolume > 100.0f) scc->masterVolume = 100.0f;});
+		addKeyHandler(keys::key_minus, [scc]() {scc->masterVolume -= 0.05f; if (scc->masterVolume < 0.0f) scc->masterVolume = 0.0f;});
 
 		launch();
 	}
@@ -926,7 +965,7 @@ int main(int argc, char **argv) {
 			sink->run();
 		});
 
-		usleep(100000);
+		usleep(900000); // wait till constructor finish
 		std::thread t2([G_SC, captions]() {
 			App app(G_SC, 1024, 768, captions);
 		});
