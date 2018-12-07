@@ -148,6 +148,7 @@ public:
 	std::vector<audio_sample_t>* sampleData;
 	int position;
 	float volume;
+	bool muted;
 
 	SampleTrack(): volume(DEFAULT_VOLUME), position(0) {
 
@@ -165,11 +166,13 @@ public:
 		sampleTrack->sampleData = sampleData;
 		sampleTrack->position = position;
 		sampleTrack->volume = volume;
+		sampleTrack->muted = muted;
 		return sampleTrack;
 	}
 
 	audio_sample_t getCurrentSample() {
-		audio_sample_t sample = (finished()) ? audio_sample_t() : sampleData->at(position);
+		if (finished() || muted) return audio_sample_t();
+		audio_sample_t sample = sampleData->at(position);
 		float samplefLeft = sample.left / 32768.0f;
 		float samplefRight = sample.right / 32768.0f;
 		// change the volume
@@ -230,6 +233,14 @@ public:
 		playingSampleTracks.push_back(sampleTracks[index].shallowClone());
 	}
 
+	void setVolume(int index, float vol) {
+		sampleTracks[index].volume = vol;
+	}
+
+	void toggleMute(int index) {
+		sampleTracks[index].muted = !sampleTracks[index].muted;
+	}
+
 	void forceStop() {
 		std::unique_lock<std::mutex> lock(position_mutex);
 		playingSampleTracks.clear();
@@ -248,10 +259,6 @@ private:
 		float samplef2Right = sample2.right / 32768.0f;
 		float mixedLeft = samplef1Left + samplef2Left;
 		float mixedRight = samplef1Right + samplef2Right;
-		// reduce the volume [?]
-		// mixedLeft *= 1;
-		// mixedRight *= 1;
-		// hard clipping
 		if (mixedLeft > 1.0f) mixedLeft = 1.0f;
 		if (mixedLeft < -1.0f) mixedLeft = -1.0f;
 		if (mixedRight > 1.0f) mixedRight = 1.0f;
@@ -445,7 +452,9 @@ public:
 	rgb_t bColor = rgb_t(0, 200, 0);
 	rgb_t bColorAlt = rgb_t(0, 100, 0);
 	bool on = true;
-	HeadControlButton(int xc, int yc) {
+	std::function<void()> action;
+	HeadControlButton(int xc, int yc, std::function<void()> actionc) {
+		action = actionc;
 		x = xc;
 		y = yc;
 	}
@@ -458,6 +467,7 @@ public:
 	}
 	void click(int, int, int) {
 		on = !on;
+		action();
 	}
 };
 
@@ -467,15 +477,19 @@ public:
 	rgb_t color;
 	bool on = true;
 	Text text;
+	SoundControl* sc;
 	HeadControlButton* muteB;
-	Head(int xc, int yc, int widthc, int heightc, std::string& caption, rgb_t colorc):
+	int index;
+	Head(SoundControl& scc, int indexc, int xc, int yc, int widthc, int heightc, std::string& caption, rgb_t colorc):
 		text(xc + 8, yc + 10, &caption) {
+		sc = &scc;
+		index = indexc;
 		x = xc;
 		y = yc;
 		width = widthc;
 		height = heightc;
 		color = colorc;
-		muteB = new HeadControlButton(x + width - muteB->width - 8, y + height - muteB->height - 8);
+		muteB = new HeadControlButton(x + width - muteB->width - 8, y + height - muteB->height - 8, [this](){sc->toggleMute(index);});
 	}
 	void draw(Context& ctx) {
 		ctx.emptyRectangle(x, y, width, height, (on) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, color);
@@ -550,13 +564,15 @@ public:
 	int bWidth = 175;
 	int bGap = 5;
 	rgb_t bColorAlt = rgb_t(175, 0, 0);
+	SoundControl* sc;
 	std::vector<Head> b;
-	HeadCol(int xc, int yc, std::vector<std::string>& captions) {
+	HeadCol(SoundControl& scc, int xc, int yc, std::vector<std::string>& captions) {
+		sc = &scc;
 		x = xc;
 		y = yc;
 		count = captions.size();
 		for (size_t i = 0; i < count; i++) {
-			b.push_back(Head(x, y + (bHeight + bGap) * i, bWidth, bHeight, captions.at(i), COLOR_LINE));
+			b.push_back(Head(scc, i, x, y + (bHeight + bGap) * i, bWidth, bHeight, captions.at(i), COLOR_LINE));
 		}
 	}
 	void draw(Context& ctx) {
@@ -593,7 +609,7 @@ public:
 		y = yc;
 		countX = countXc;
 		countY = captions.size();
-		h = new HeadCol(x, y, captions);
+		h = new HeadCol(scc, x, y, captions);
 		for (int j = 0; j < countX; j++) {
 			v.push_back(ButtonCol(x + h->bGap + h->bWidth + j * 35, y, countY, (j % 4 == 0) ? COLOR_BG_LIGHTER : COLOR_BG));
 		}
