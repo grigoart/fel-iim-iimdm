@@ -18,6 +18,9 @@
 #include <string>       // std::string
 #include <list>       // std::list
 #include <thread>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 using std::unique_ptr;
 
@@ -693,6 +696,7 @@ public:
 	void run() {
 		running = true;
 		passedTime = 0;
+		pageVisible = 0;
 	};
 	~ButtonGrid() {
 		delete h;
@@ -977,13 +981,71 @@ private:
 	}
 };
 
+std::vector<std::string> listFiles(const std::string path) {
+	std::vector<std::string> files;
+	DIR *dir;
+	struct dirent *ent;
+	if ((dir = opendir(path.c_str())) != NULL) {
+		printf ("Directory \"%s\" contains next files: ", path.c_str());
+		while ((ent = readdir (dir)) != NULL) {
+			std::string name = ent->d_name;
+			if (name == "." || name == "..") continue;
+			printf ("\"%s\", ", name.c_str());
+			files.push_back(name);
+		}
+		printf ("\n");
+	} else {
+		printf ("Could not open directory \"%s\"\n", path.c_str());
+	}
+	closedir (dir);
+	return files;
+}
+
+bool exists(const std::string& name) {
+  struct stat buffer;   
+  return (stat (name.c_str(), &buffer) == 0); 
+}
+
+bool isDir(const std::string pathname) {
+	struct stat info;
+	if( !exists(pathname) ) {
+		printf ("Can not access \"%s\"\n", pathname.c_str());
+		return false;
+	}	
+	else if( info.st_mode & S_IFDIR )
+		return true;
+	else
+	    return false;
+}
+
 int main(int argc, char **argv) {
 	try {
 		std::vector<std::string> files;
 
 		if (argc > 1) {
-			for (int counter = 1; counter < argc; counter++)
-				files.push_back(argv[counter]);
+			for (int counter = 1; counter < argc; counter++) {
+				std::string file = argv[counter];
+				if (!isDir(file)) {
+					if (exists(file)) {
+						files.push_back(file);
+					}
+					else {
+						printf("File \"%s\" does not exist. Skipping...\n", file.c_str());
+					}
+				}
+				else {
+					printf("\"%s\" is a directory. Reading files...\n", file.c_str());
+				    for (auto &s : listFiles(file)) {
+						if (!isDir(file + s)) {
+							files.push_back(file + s);
+							printf("File \"%s\" was queued\n", s.c_str());
+						}
+						else {
+							printf("\"%s\" is a directory. Skipping...\n", s.c_str());
+						}
+			        }
+				}
+			}
 		}
 		else {
 			files.push_back("/home/dsv/Downloads/mm1/iimavlib-master/data/drum0.wav");
@@ -1009,7 +1071,7 @@ int main(int argc, char **argv) {
 			sink->run();
 		});
 
-		usleep(900000); // wait till constructor finish
+		usleep(1000000); // wait till constructor finish
 		std::thread t2([G_SC, captions]() {
 			App app(G_SC, 1024, 768, captions);
 		});
