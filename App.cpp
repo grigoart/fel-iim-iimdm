@@ -307,22 +307,26 @@ public:
 	int size = 2;
 	std::string* strRef;
 	std::string strStatic;
-	Text(int xc, int yc, std::string* strRefc) {
+	size_t maxLength;
+	Text(int xc, int yc, std::string* strRefc, size_t maxLengthc = 0) {
 		x = xc;
 		y = yc;
 		strRef = strRefc;
+		maxLength = maxLengthc;
 	}
-	Text(int xc, int yc, std::string strStaticc) {
+	Text(int xc, int yc, std::string strStaticc, size_t maxLengthc = 0) {
 		x = xc;
 		y = yc;
 		strStatic = strStaticc;
 		strRef = &strStatic;
+		maxLength = maxLengthc;
 	}
 	size_t length() {
 		return strRef->length();
 	}
 	void draw(Context& ctx) {
 		for (size_t i = 0; i < strRef->length(); i++) {
+			if (maxLength != 0 && maxLength <= i) break;
 			int* arr = A;
 			switch ((*strRef).at(i)) {
 			case 'a': case 'A': arr = A; break;
@@ -381,19 +385,19 @@ class CenteredText: public Drawable {
 public:
 	int x, y, width, height;
 	Text* text;
-	CenteredText(int xc, int yc, int widthc, int heightc, std::string* strRefc) {
+	CenteredText(int xc, int yc, int widthc, int heightc, std::string* strRefc, size_t maxLength = 0) {
 		x = xc;
 		y = yc;
 		width = widthc;
 		height = heightc;
-		text = new Text(x, y, strRefc);
+		text = new Text(x, y, strRefc, maxLength);
 	}
-	CenteredText(int xc, int yc, int widthc, int heightc, std::string strStaticc) {
+	CenteredText(int xc, int yc, int widthc, int heightc, std::string strStaticc, size_t maxLength = 0) {
 		x = xc;
 		y = yc;
 		width = widthc;
 		height = heightc;
-		text = new Text(x, y, strStaticc);
+		text = new Text(x, y, strStaticc, maxLength);
 	}
 	void draw(Context& ctx) {
 		int textLen = text->size * 3 * text->length() + (text->length() - 1) * text->size;
@@ -481,7 +485,7 @@ public:
 	HeadControlButton* muteB;
 	int index;
 	Head(SoundControl& scc, int indexc, int xc, int yc, int widthc, int heightc, std::string& caption, rgb_t colorc):
-		text(xc + 8, yc + 10, &caption) {
+		text(xc + 8, yc + 10, &caption, 15) {
 		sc = &scc;
 		index = indexc;
 		x = xc;
@@ -654,24 +658,24 @@ public:
 	}
 	void activateNext() {
 		if (active == countX - 1) {
-			pageActive = (pageActive + 1) % 4;
+			activate((pageActive + 1) % 4, 0);
 			pageVisible = pageActive;
-			activate(0);
 		} else {
-			activate(active + 1);
+			activate(pageActive, active + 1);
 		}
 	}
-	void activate(int index) {
+	void activate(int page, int index) {
 		if (active != -1) {
 			pages[pageActive].at(active).dark();
 		}
-		pages[pageActive].at(index).light();
-		for (size_t i = 0; i < pages[pageActive].at(index).b.size(); i++) {
-			if (pages[pageActive].at(index).b.at(i).highlited) {
+		pageActive = page;
+		active = index;
+		pages[pageActive].at(active).light();
+		for (size_t i = 0; i < pages[pageActive].at(active).b.size(); i++) {
+			if (pages[pageActive].at(active).b.at(i).highlited) {
 				sc->playSample(i);
 			}
 		}
-		active = index;
 	}
 	void deactivate() {
 		if (active != -1) {
