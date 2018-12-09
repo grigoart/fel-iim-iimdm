@@ -599,6 +599,7 @@ public:
 	HeadCol* h;
 	SoundControl* sc;
 	size_t pageActive = 0;
+	size_t pageVisible = 0;
 	std::vector<std::vector<ButtonCol>> pages;
 	int active = -1;
 	bool running = false;
@@ -625,7 +626,7 @@ public:
 	void draw(Context& ctx) {
 		h->draw(ctx);
 		for (int i = 0; i < countX; i++) {
-			pages[pageActive].at(i).draw(ctx);
+			pages[pageVisible].at(i).draw(ctx);
 		}
 	}
 	void update(int delta) {
@@ -643,14 +644,18 @@ public:
 			h->click(x, y, 0);
 		}
 		for (int j = 0; j < countX; j++) {
-			if (isIn(x, y, pages[pageActive].at(j).hitrectangle())) {
-				pages[pageActive].at(j).click(x, y, 0);
+			if (isIn(x, y, pages[pageVisible].at(j).hitrectangle())) {
+				pages[pageVisible].at(j).click(x, y, 0);
 			}
 		}
+	}
+	void setVisible(int index) {
+		pageVisible = index;
 	}
 	void activateNext() {
 		if (active == countX - 1) {
 			pageActive = (pageActive + 1) % 4;
+			pageVisible = pageActive;
 			activate(0);
 		} else {
 			activate(active + 1);
@@ -867,6 +872,10 @@ public:
 		addKeyHandler(keys::key_space, [cp]() {cp.play->togglePlay();});
 		addKeyHandler(107/*NUM+*/, [scc]() {scc->masterVolume += 0.05f; if (scc->masterVolume > 100.0f) scc->masterVolume = 100.0f;});
 		addKeyHandler(109/*NUM-*/, [scc]() {scc->masterVolume -= 0.05f; if (scc->masterVolume < 0.0f) scc->masterVolume = 0.0f;});
+		addKeyHandler('1', [&bg]() {bg.setVisible(0);});
+		addKeyHandler('2', [&bg]() {bg.setVisible(1);});
+		addKeyHandler('3', [&bg]() {bg.setVisible(2);});
+		addKeyHandler('4', [&bg]() {bg.setVisible(3);});
 
 		launch();
 	}
