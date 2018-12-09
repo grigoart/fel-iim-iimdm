@@ -598,7 +598,8 @@ public:
 	int countX, countY;
 	HeadCol* h;
 	SoundControl* sc;
-	std::vector<ButtonCol> v;
+	size_t pageActive = 0;
+	std::vector<std::vector<ButtonCol>> pages;
 	int active = -1;
 	bool running = false;
 	int passedTime = 0;
@@ -610,21 +611,30 @@ public:
 		countX = countXc;
 		countY = captions.size();
 		h = new HeadCol(scc, x, y, captions);
+		pages.push_back(std::vector<ButtonCol>());
+		pages.push_back(std::vector<ButtonCol>());
+		pages.push_back(std::vector<ButtonCol>());
+		pages.push_back(std::vector<ButtonCol>());
 		for (int j = 0; j < countX; j++) {
-			v.push_back(ButtonCol(x + h->bGap + h->bWidth + j * 35, y, countY, (j % 4 == 0) ? COLOR_BG_LIGHTER : COLOR_BG));
+			pages[0].push_back(ButtonCol(x + h->bGap + h->bWidth + j * 35, y, countY, (j % 4 == 0) ? COLOR_BG_LIGHTER : COLOR_BG));
 		}
+		pages[1] = pages[0];
+		pages[2] = pages[0];
+		pages[3] = pages[0];
 	}
 	void draw(Context& ctx) {
 		h->draw(ctx);
 		for (int i = 0; i < countX; i++) {
-			v.at(i).draw(ctx);
+			pages[pageActive].at(i).draw(ctx);
 		}
 	}
 	void update(int delta) {
-		passedTime += delta;
-		if (passedTime >= 60000 / bpm / 4) {
-			passedTime -= 60000 / bpm / 4;
-			if (running) activateNext();
+		if (running) {
+			passedTime += delta;
+			if (passedTime >= 60000 / bpm / 4) {
+				passedTime -= 60000 / bpm / 4;
+				activateNext();
+			}
 		}
 	}
 	rectangle_t hitrectangle() {return rectangle_t(0, 0, WIN_W, WIN_H);}
@@ -633,13 +643,14 @@ public:
 			h->click(x, y, 0);
 		}
 		for (int j = 0; j < countX; j++) {
-			if (isIn(x, y, v.at(j).hitrectangle())) {
-				v.at(j).click(x, y, 0);
+			if (isIn(x, y, pages[pageActive].at(j).hitrectangle())) {
+				pages[pageActive].at(j).click(x, y, 0);
 			}
 		}
 	}
 	void activateNext() {
 		if (active == countX - 1) {
+			pageActive = (pageActive + 1) % 4;
 			activate(0);
 		} else {
 			activate(active + 1);
@@ -647,11 +658,11 @@ public:
 	}
 	void activate(int index) {
 		if (active != -1) {
-			v.at(active).dark();
+			pages[pageActive].at(active).dark();
 		}
-		v.at(index).light();
-		for (size_t i = 0; i < v.at(index).b.size(); i++) {
-			if (v.at(index).b.at(i).highlited) {
+		pages[pageActive].at(index).light();
+		for (size_t i = 0; i < pages[pageActive].at(index).b.size(); i++) {
+			if (pages[pageActive].at(index).b.at(i).highlited) {
 				sc->playSample(i);
 			}
 		}
@@ -659,7 +670,8 @@ public:
 	}
 	void deactivate() {
 		if (active != -1) {
-			v.at(active).dark();
+			pages[pageActive].at(active).dark();
+			pageActive = 0;
 			active = -1;
 		}
 	}
@@ -671,6 +683,7 @@ public:
 	};
 	void run() {
 		running = true;
+		passedTime = 0;
 	};
 	~ButtonGrid() {
 		delete h;
