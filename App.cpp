@@ -83,13 +83,17 @@ int SIZE_LINE_THIN = 1;
 rgb_t COLOR_BG = rgb_t(25, 25, 25);
 rgb_t COLOR_BG_LIGHTER = rgb_t(35, 35, 35);
 rgb_t COLOR_LINE = rgb_t(255, 0, 0);
+rgb_t COLOR_LINE_INACTIVE = rgb_t(150, 0, 0);
 
 float DEFAULT_VOLUME = 0.5f;
 
 SoundControl* G_SC = nullptr;
 
+bool isIn(int x, int y, int r_x, int r_y, int r_width, int r_height) {
+	return x > r_x && x < r_x + r_width && y > r_y && y < r_y + r_height;
+}
 bool isIn(int x, int y, rectangle_t rect) {
-	return x > rect.x && x < rect.x + rect.width && y > rect.y && y < rect.y + rect.height;
+	return isIn(x, y, rect.x, rect.y, rect.width, rect.height);
 }
 
 class Drawable {
@@ -532,6 +536,7 @@ public:
 	rgb_t lightColor = rgb_t(200, 200, 200);
 	std::vector<Button> b;
 	bool highlited = false;
+	int activeCount = 0;
 	ButtonCol(int xc, int yc, int countc, rgb_t fillColor = COLOR_BG) {
 		x = xc;
 		y = yc;
@@ -555,6 +560,12 @@ public:
 		for (size_t j = 0; j < count; j++) {
 			if (isIn(x, y, b.at(j).hitrectangle())) {
 				b.at(j).click(x, y, 0);
+				if (b.at(j).on) {
+					activeCount++;
+				}
+				else {
+					activeCount--;
+				}
 			}
 		}
 	}
@@ -569,6 +580,9 @@ public:
 		for (size_t i = 0; i < count; i++) {
 			b.at(i).dark();
 		}
+	}
+	bool isEmpty() {
+		return activeCount == 0;
 	}
 };
 
@@ -740,6 +754,53 @@ public:
 	}
 };
 
+class Paginator: public Drawable, public Clickable {
+public:
+	int x, y, width = 130, height = 35;
+	size_t* pageVisibleRef;
+	size_t* pageCountRef;
+
+	CenteredText* pageOne;
+	CenteredText* pageTwo;
+	CenteredText* pageThree;
+	CenteredText* pageFour;
+	Paginator(int xc, int yc, size_t* pageVisibleRefc, size_t* pageCountRefc) {
+		x = xc;
+		y = yc;
+		pageVisibleRef = pageVisibleRefc;
+		pageCountRef = pageCountRefc;
+		pageOne = new CenteredText(x, y, height, height, "1");
+		pageTwo = new CenteredText(x + height + 5, y, height, height, "2");
+		pageThree = new CenteredText(x + (height + 5) * 2, y, height, height, "3");
+		pageFour = new CenteredText(x + (height + 5) * 3, y, height, height, "4");
+	}
+	void draw(Context& ctx) {
+		ctx.emptyRectangle(pageOne->x, pageOne->y, pageOne->width, pageOne->height, (*pageVisibleRef == 0) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, COLOR_LINE);
+		pageOne->draw(ctx);
+		ctx.emptyRectangle(pageTwo->x, pageTwo->y, pageTwo->width, pageTwo->height, (*pageVisibleRef == 1) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, COLOR_LINE);
+		pageTwo->draw(ctx);
+		ctx.emptyRectangle(pageThree->x, pageThree->y, pageThree->width, pageThree->height, (*pageVisibleRef == 2) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, COLOR_LINE);
+		pageThree->draw(ctx);
+		ctx.emptyRectangle(pageFour->x, pageFour->y, pageFour->width, pageFour->height, (*pageVisibleRef == 3) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, COLOR_LINE);
+		pageFour->draw(ctx);
+	}
+	rectangle_t hitrectangle() {return rectangle_t(x, y, width, height);}
+	void click(int x, int y, int) {
+		if (isIn(x, y, pageOne->x, pageOne->y, pageOne->width, pageOne->height)) {
+			*pageVisibleRef = 0;
+		}
+		else if (isIn(x, y, pageTwo->x, pageTwo->y, pageTwo->width, pageTwo->height)) {
+			*pageVisibleRef = 1;
+		}
+		else if (isIn(x, y, pageThree->x, pageThree->y, pageThree->width, pageThree->height)) {
+			*pageVisibleRef = 2;
+		}
+		else if (isIn(x, y, pageFour->x, pageFour->y, pageFour->width, pageFour->height)) {
+			*pageVisibleRef = 3;
+		}
+	}
+};
+
 class ButtonGrid: public Drawable, public Updatable, public Clickable {
 public:
 	int x, y;
@@ -748,6 +809,7 @@ public:
 	SoundControl* sc;
 	size_t pageActive = 0;
 	size_t pageVisible = 0;
+	size_t pageCount = 1;
 	std::vector<std::vector<ButtonCol>> pages;
 	std::vector<ValueHorizontalSpin*> controls;
 	int active = -1;
@@ -811,13 +873,19 @@ public:
 				controls.at(i)->click(x, y, button);
 			}
 		}
+		pageCount = 1 + !pageIsEmpty(1) + !pageIsEmpty(2) + !pageIsEmpty(3);
 	}
 	void setVisible(int index) {
 		pageVisible = index;
 	}
 	void activateNext() {
 		if (active == countX - 1) {
-			activate((pageActive + 1) % 4, 0);
+			if (pageActive >= pageCount) {
+				activate(0, 0);
+			}
+			else {
+				activate((pageActive + 1) % pageCount, 0);
+			}
 			pageVisible = pageActive;
 		} else {
 			activate(pageActive, active + 1);
@@ -854,6 +922,12 @@ public:
 		passedTime = 60000 / bpm / 4;
 		pageVisible = 0;
 	};
+	bool pageIsEmpty(int index) {
+		for (int i = 0; i < countX; i++) {
+			if (!pages[index][i].isEmpty()) return false;;
+		}
+		return true;
+	}
 	~ButtonGrid() {
 		delete h;
 	}
@@ -908,6 +982,7 @@ public:
 	rgb_t color;
 	PlayButton* play;
 	ValueSpin* valueSpin;
+	Paginator* paginator;
 	ControlPanel(int xc, int yc, int widthc, int heightc, ButtonGrid* bg) {
 		x = xc;
 		y = yc;
@@ -915,11 +990,13 @@ public:
 		height = heightc;
 		play = new PlayButton(x + 20, y + 20, bg);
 		valueSpin = new ValueSpin(x + 200, y + 10, &(bg->bpm));
+		paginator = new Paginator(x + 200, y + 75, &(bg->pageVisible), &(bg->pageCount));
 	}
 	void draw(Context& ctx) {
 		ctx.emptyRectangle(x, y, width, height, SIZE_LINE_THIN, COLOR_LINE);
 		ctx.draw(*play);
 		ctx.draw(*valueSpin);
+		ctx.draw(*paginator);
 	}
 	void update(int delta) {
 		valueSpin->update(delta);
@@ -931,6 +1008,9 @@ public:
 		}
 		if (isIn(x, y, valueSpin->hitrectangle())) {
 			valueSpin->click(x, y, b);
+		}
+		if (isIn(x, y, paginator->hitrectangle())) {
+			paginator->click(x, y, 0);
 		}
 	}
 };
