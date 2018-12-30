@@ -21,6 +21,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <math.h>
 
 using std::unique_ptr;
 
@@ -146,18 +147,27 @@ public:
 	//void draw_line_thick(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, int border, iimavlib::rgb_t color)
 };
 
-class SampleTrack {
+class SampleConfig {
 public:
-	std::vector<audio_sample_t>* sampleData;
-	int position;
 	float volume;
 	bool muted;
 
-	SampleTrack(): volume(DEFAULT_VOLUME), position(0) {
+	SampleConfig(): volume(DEFAULT_VOLUME), muted(false) {}
+
+};
+
+class SampleTrack {
+public:
+	SampleConfig* config;
+	std::vector<audio_sample_t>* sampleData;
+	int position;
+
+	SampleTrack(): position(0) {
 
 	}
 
-	SampleTrack(std::vector<audio_sample_t>& sampleDatac, float volumec = DEFAULT_VOLUME): volume(volumec), position(0) {
+	SampleTrack(std::vector<audio_sample_t>& sampleDatac): position(0) {
+		config = new SampleConfig();
 		sampleData = new std::vector<audio_sample_t>(sampleDatac.size());
 		for (size_t i = 0; i < sampleDatac.size(); i++) {
 			sampleData->at(i) = sampleDatac[i];
@@ -168,19 +178,18 @@ public:
 		SampleTrack* sampleTrack = new SampleTrack();
 		sampleTrack->sampleData = sampleData;
 		sampleTrack->position = position;
-		sampleTrack->volume = volume;
-		sampleTrack->muted = muted;
+		sampleTrack->config = config;
 		return sampleTrack;
 	}
 
 	audio_sample_t getCurrentSample() {
-		if (finished() || muted) return audio_sample_t();
+		if (finished() || config->muted) return audio_sample_t();
 		audio_sample_t sample = sampleData->at(position);
 		float samplefLeft = sample.left / 32768.0f;
 		float samplefRight = sample.right / 32768.0f;
 		// change the volume
-		samplefLeft *= volume;
-		samplefRight *= volume;
+		samplefLeft *= config->volume;
+		samplefRight *= config->volume;
 		// hard clipping
 		if (samplefLeft > 1.0f) samplefLeft = 1.0f;
 		if (samplefLeft < -1.0f) samplefLeft = -1.0f;
@@ -202,6 +211,7 @@ public:
 
 class SoundControl: public AudioFilter {
 public:
+	std::vector<SampleTrack> sampleTracks;
 	float masterVolume = 0.8f;
 
 	SoundControl(std::vector<std::string> filesc): AudioFilter(pAudioFilter()) {
@@ -237,11 +247,11 @@ public:
 	}
 
 	void setVolume(int index, float vol) {
-		sampleTracks[index].volume = vol;
+		sampleTracks[index].config->volume = vol;
 	}
 
 	void toggleMute(int index) {
-		sampleTracks[index].muted = !sampleTracks[index].muted;
+		sampleTracks[index].config->muted = !sampleTracks[index].config->muted;
 	}
 
 	void forceStop() {
@@ -251,7 +261,6 @@ public:
 
 private:
 	std::vector<SampleTrack*> playingSampleTracks;
-	std::vector<SampleTrack> sampleTracks;
 
 	std::mutex position_mutex;
 
@@ -487,16 +496,16 @@ public:
 	SoundControl* sc;
 	HeadControlButton* muteB;
 	int index;
-	Head(SoundControl& scc, int indexc, int xc, int yc, int widthc, int heightc, std::string& caption, rgb_t colorc):
+	Head(SoundControl* scc, int indexc, int xc, int yc, int widthc, int heightc, std::string& caption, rgb_t colorc):
 		text(xc + 8, yc + 10, &caption, 15) {
-		sc = &scc;
+		sc = scc;
 		index = indexc;
 		x = xc;
 		y = yc;
 		width = widthc;
 		height = heightc;
 		color = colorc;
-		muteB = new HeadControlButton(x + width - muteB->width - 8, y + height - muteB->height - 8, [this](){sc->toggleMute(index);});
+		muteB = new HeadControlButton(x + width - muteB->width - 8, y + height - muteB->height - 8, [scc, indexc](){scc->toggleMute(indexc);});
 	}
 	void draw(Context& ctx) {
 		ctx.emptyRectangle(x, y, width, height, (on) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, color);
@@ -573,8 +582,8 @@ public:
 	rgb_t bColorAlt = rgb_t(175, 0, 0);
 	SoundControl* sc;
 	std::vector<Head> b;
-	HeadCol(SoundControl& scc, int xc, int yc, std::vector<std::string>& captions) {
-		sc = &scc;
+	HeadCol(SoundControl* scc, int xc, int yc, std::vector<std::string>& captions) {
+		sc = scc;
 		x = xc;
 		y = yc;
 		count = captions.size();
@@ -596,153 +605,6 @@ public:
 				b.at(j).click(x, y, 0);
 			}
 		}
-	}
-};
-
-class ButtonGrid: public Drawable, public Updatable, public Clickable {
-public:
-	int x, y;
-	int countX, countY;
-	HeadCol* h;
-	SoundControl* sc;
-	size_t pageActive = 0;
-	size_t pageVisible = 0;
-	std::vector<std::vector<ButtonCol>> pages;
-	int active = -1;
-	bool running = false;
-	int passedTime = 0;
-	int bpm = 120;
-	ButtonGrid(SoundControl& scc, int xc, int yc, int countXc, std::vector<std::string>& captions) {
-		sc = &scc;
-		x = xc;
-		y = yc;
-		countX = countXc;
-		countY = captions.size();
-		h = new HeadCol(scc, x, y, captions);
-		pages.push_back(std::vector<ButtonCol>());
-		pages.push_back(std::vector<ButtonCol>());
-		pages.push_back(std::vector<ButtonCol>());
-		pages.push_back(std::vector<ButtonCol>());
-		for (int j = 0; j < countX; j++) {
-			pages[0].push_back(ButtonCol(x + h->bGap + h->bWidth + j * 35, y, countY, (j % 4 == 0) ? COLOR_BG_LIGHTER : COLOR_BG));
-		}
-		pages[1] = pages[0];
-		pages[2] = pages[0];
-		pages[3] = pages[0];
-	}
-	void draw(Context& ctx) {
-		h->draw(ctx);
-		for (int i = 0; i < countX; i++) {
-			pages[pageVisible].at(i).draw(ctx);
-		}
-	}
-	void update(int delta) {
-		if (running) {
-			passedTime += delta;
-			if (passedTime >= 60000 / bpm / 4) {
-				passedTime -= 60000 / bpm / 4;
-				activateNext();
-			}
-		}
-	}
-	rectangle_t hitrectangle() {return rectangle_t(0, 0, WIN_W, WIN_H);}
-	void click(int x, int y, int) {
-		if (isIn(x, y, h->hitrectangle())) {
-			h->click(x, y, 0);
-		}
-		for (int j = 0; j < countX; j++) {
-			if (isIn(x, y, pages[pageVisible].at(j).hitrectangle())) {
-				pages[pageVisible].at(j).click(x, y, 0);
-			}
-		}
-	}
-	void setVisible(int index) {
-		pageVisible = index;
-	}
-	void activateNext() {
-		if (active == countX - 1) {
-			activate((pageActive + 1) % 4, 0);
-			pageVisible = pageActive;
-		} else {
-			activate(pageActive, active + 1);
-		}
-	}
-	void activate(int page, int index) {
-		if (active != -1) {
-			pages[pageActive].at(active).dark();
-		}
-		pageActive = page;
-		active = index;
-		pages[pageActive].at(active).light();
-		for (size_t i = 0; i < pages[pageActive].at(active).b.size(); i++) {
-			if (pages[pageActive].at(active).b.at(i).highlited) {
-				sc->playSample(i);
-			}
-		}
-	}
-	void deactivate() {
-		if (active != -1) {
-			pages[pageActive].at(active).dark();
-			pageActive = 0;
-			active = -1;
-		}
-	}
-	void stop() {
-		deactivate();
-		sc->forceStop();
-		active = -1;
-		running = false;
-	};
-	void run() {
-		running = true;
-		passedTime = 0;
-		pageVisible = 0;
-	};
-	~ButtonGrid() {
-		delete h;
-	}
-};
-
-class PlayButton: public Drawable, public Clickable {
-public:
-	int x, y, width;
-	rgb_t color;
-	bool on = false;
-	ButtonGrid* bg;
-	PlayButton(int xc, int yc, ButtonGrid* bgc/*, int widthc, int heightc, rgb_t colorc*/) {
-		x = xc;
-		y = yc;
-		width = 55;
-		color = COLOR_LINE;
-		bg = bgc;
-	}
-	void draw(Context& ctx) {
-		ctx.rectangle(x, y, width, width, COLOR_BG);
-		ctx.emptyRectangle(x, y, width, width, SIZE_LINE_BOLD, color);
-		int iconWidth = width / 3;
-		int leftTopX = x + width / 2 - (iconWidth / 2);
-		int leftTopY = y + width / 2 - (iconWidth / 2);
-		if (on) {
-			ctx.emptyRectangle(leftTopX, leftTopY, iconWidth, iconWidth, COLOR_LINE);
-		}
-		else {
-			ctx.triangle(leftTopX, leftTopY, leftTopX, leftTopY + iconWidth, leftTopX + iconWidth, leftTopY + iconWidth / 2, COLOR_LINE);
-		}
-	}
-	rectangle_t hitrectangle() {
-		return rectangle_t(x, y, width, width);
-	}
-	void togglePlay() {
-		on = !on;
-		if (!on) {
-			bg->stop();
-		}
-		else {
-			bg->run();
-		}
-	}
-	void click(int, int, int) {
-		togglePlay();
 	}
 };
 
@@ -824,6 +686,222 @@ public:
 	}
 };
 
+class ValueHorizontalSpin: public Drawable, public Updatable, public Clickable {
+public:
+	int x, y, width = 75, height = 30;
+	rgb_t color;
+	float* valueRef;
+	std::string value;
+	float step = 0.05f;
+	float bigStep = 0.1f;
+	float maxValue = 1.0f;
+	float minValue = 0.0f;
+
+	ValueSpinBtn* valueSpinBtnUp;
+	ValueSpinBtn* valueSpinBtnDown;
+	CenteredText* valueText;
+	ValueHorizontalSpin(int xc, int yc, float* valueRefc) {
+		x = xc;
+		y = yc;
+		valueRef = valueRefc;
+		value = std::to_string(static_cast<int>(round(*valueRef * 100)));
+		valueText = new CenteredText(x + width / 3, y, width / 3, height, &value);
+		valueSpinBtnUp = new ValueSpinBtn(x + 2 * width / 3, y, width / 3, height, true);
+		valueSpinBtnDown = new ValueSpinBtn(x, y, width / 3, height, false);
+	}
+	void draw(Context& ctx) {
+		valueSpinBtnUp->draw(ctx);
+		valueText->draw(ctx);
+		valueSpinBtnDown->draw(ctx);
+	}
+	void update(int) {
+		value = std::to_string(static_cast<int>(round(*valueRef * 100)));
+	}
+	rectangle_t hitrectangle() {return rectangle_t(x, y, width, height);}
+	void click(int x, int y, int b) {
+		if (isIn(x, y, valueSpinBtnUp->hitrectangle())) {
+			if (b == 0) {
+				(*valueRef) += step;
+			}
+			else {
+				(*valueRef) += bigStep;
+			}
+			if (*valueRef > maxValue) (*valueRef) = maxValue;
+		}
+		else if (isIn(x, y, valueSpinBtnDown->hitrectangle())) {
+			if (b == 0) {
+				(*valueRef) -= step;
+			}
+			else {
+				(*valueRef) -= bigStep;
+			}
+			if (*valueRef < minValue) (*valueRef) = minValue;
+		}
+	}
+};
+
+class ButtonGrid: public Drawable, public Updatable, public Clickable {
+public:
+	int x, y;
+	int countX, countY;
+	HeadCol* h;
+	SoundControl* sc;
+	size_t pageActive = 0;
+	size_t pageVisible = 0;
+	std::vector<std::vector<ButtonCol>> pages;
+	std::vector<ValueHorizontalSpin*> controls;
+	int active = -1;
+	bool running = false;
+	int passedTime = 0;
+	int bpm = 120;
+	ButtonGrid(SoundControl* scc, int xc, int yc, int countXc, std::vector<std::string>& captions) {
+		sc = scc;
+		x = xc;
+		y = yc;
+		countX = countXc;
+		countY = captions.size();
+		h = new HeadCol(scc, x, y, captions);
+		pages.push_back(std::vector<ButtonCol>());
+		pages.push_back(std::vector<ButtonCol>());
+		pages.push_back(std::vector<ButtonCol>());
+		pages.push_back(std::vector<ButtonCol>());
+		for (int i = 0; i < countX; i++) {
+			pages[0].push_back(ButtonCol(x + h->bGap + h->bWidth + i * 35, y, countY, (i % 4 == 0) ? COLOR_BG_LIGHTER : COLOR_BG));
+			for (int j = 0; j < countY; j++) {
+				controls.push_back(new ValueHorizontalSpin(x + h->bGap + h->bWidth + countX * 35, y + j * 35, &(scc->sampleTracks[j].config->volume)));
+			}
+		}
+		pages[1] = pages[0];
+		pages[2] = pages[0];
+		pages[3] = pages[0];
+	}
+	void draw(Context& ctx) {
+		h->draw(ctx);
+		for (int i = 0; i < countX; i++) {
+			pages[pageVisible].at(i).draw(ctx);
+		}
+		for (int i = 0; i < countY; i++) {
+			controls.at(i)->draw(ctx);
+		}
+	}
+	void update(int delta) {
+		if (running) {
+			passedTime += delta;
+			if (passedTime >= 60000 / bpm / 4) {
+				passedTime -= 60000 / bpm / 4;
+				activateNext();
+			}
+		}
+		for (int i = 0; i < countY; i++) {
+			controls.at(i)->update(delta);
+		}
+	}
+	rectangle_t hitrectangle() {return rectangle_t(0, 0, WIN_W, WIN_H);}
+	void click(int x, int y, int button) {
+		if (isIn(x, y, h->hitrectangle())) {
+			h->click(x, y, 0);
+		}
+		for (int j = 0; j < countX; j++) {
+			if (isIn(x, y, pages[pageVisible].at(j).hitrectangle())) {
+				pages[pageVisible].at(j).click(x, y, 0);
+			}
+		}
+		for (int i = 0; i < countY; i++) {
+			if (isIn(x, y, controls.at(i)->hitrectangle())) {
+				controls.at(i)->click(x, y, button);
+			}
+		}
+	}
+	void setVisible(int index) {
+		pageVisible = index;
+	}
+	void activateNext() {
+		if (active == countX - 1) {
+			activate((pageActive + 1) % 4, 0);
+			pageVisible = pageActive;
+		} else {
+			activate(pageActive, active + 1);
+		}
+	}
+	void activate(int page, int index) {
+		if (active != -1) {
+			pages[pageActive].at(active).dark();
+		}
+		pageActive = page;
+		active = index;
+		pages[pageActive].at(active).light();
+		for (size_t i = 0; i < pages[pageActive].at(active).b.size(); i++) {
+			if (pages[pageActive].at(active).b.at(i).highlited) {
+				sc->playSample(i);
+			}
+		}
+	}
+	void deactivate() {
+		if (active != -1) {
+			pages[pageActive].at(active).dark();
+			pageActive = 0;
+			active = -1;
+		}
+	}
+	void stop() {
+		deactivate();
+		sc->forceStop();
+		active = -1;
+		running = false;
+	};
+	void run() {
+		running = true;
+		passedTime = 60000 / bpm / 4;
+		pageVisible = 0;
+	};
+	~ButtonGrid() {
+		delete h;
+	}
+};
+
+class PlayButton: public Drawable, public Clickable {
+public:
+	int x, y, width;
+	rgb_t color;
+	bool on = false;
+	ButtonGrid* bg;
+	PlayButton(int xc, int yc, ButtonGrid* bgc/*, int widthc, int heightc, rgb_t colorc*/) {
+		x = xc;
+		y = yc;
+		width = 55;
+		color = COLOR_LINE;
+		bg = bgc;
+	}
+	void draw(Context& ctx) {
+		ctx.rectangle(x, y, width, width, COLOR_BG);
+		ctx.emptyRectangle(x, y, width, width, SIZE_LINE_BOLD, color);
+		int iconWidth = width / 3;
+		int leftTopX = x + width / 2 - (iconWidth / 2);
+		int leftTopY = y + width / 2 - (iconWidth / 2);
+		if (on) {
+			ctx.emptyRectangle(leftTopX, leftTopY, iconWidth, iconWidth, COLOR_LINE);
+		}
+		else {
+			ctx.triangle(leftTopX, leftTopY, leftTopX, leftTopY + iconWidth, leftTopX + iconWidth, leftTopY + iconWidth / 2, COLOR_LINE);
+		}
+	}
+	rectangle_t hitrectangle() {
+		return rectangle_t(x, y, width, width);
+	}
+	void togglePlay() {
+		on = !on;
+		if (!on) {
+			bg->stop();
+		}
+		else {
+			bg->run();
+		}
+	}
+	void click(int, int, int) {
+		togglePlay();
+	}
+};
+
 class ControlPanel: public Drawable, public Updatable, public Clickable {
 public:
 	int x, y, width, height;
@@ -870,7 +948,7 @@ public:
 		data(rectangle_t(0, 0, width, height), COLOR_BG),
 		ctx(dynamic_cast<SDLDevice&>(*this), data) {
 
-		ButtonGrid bg(*scc, 25, 75, 16, captions);
+		ButtonGrid bg(scc, 25, 75, 16, captions);
 
 		ControlPanel cp(0, 500, WIN_W, 100, &bg);
 
@@ -878,8 +956,8 @@ public:
 		add(&cp);
 
 		addKeyHandler(keys::key_space, [cp]() {cp.play->togglePlay();});
-		addKeyHandler(107/*NUM+*/, [scc]() {scc->masterVolume += 0.05f; if (scc->masterVolume > 100.0f) scc->masterVolume = 100.0f;});
-		addKeyHandler(109/*NUM-*/, [scc]() {scc->masterVolume -= 0.05f; if (scc->masterVolume < 0.0f) scc->masterVolume = 0.0f;});
+		addKeyHandler('=', [scc]() {scc->masterVolume += 0.05f; if (scc->masterVolume > 100.0f) scc->masterVolume = 100.0f;});
+		addKeyHandler('-', [scc]() {scc->masterVolume -= 0.05f; if (scc->masterVolume < 0.0f) scc->masterVolume = 0.0f;});
 		addKeyHandler('1', [&bg]() {bg.setVisible(0);});
 		addKeyHandler('2', [&bg]() {bg.setVisible(1);});
 		addKeyHandler('3', [&bg]() {bg.setVisible(2);});
@@ -967,7 +1045,7 @@ private:
 	bool do_key_pressed(const int key, bool pressed) {
 		if (pressed) {
 			switch (key) {
-			case keys::key_escape: return false;
+				case keys::key_escape: return false;
 			}
 			std::map<char, std::function<void()>>::iterator it = keyFunctionMap.begin();
 			while (it != keyFunctionMap.end()) {
