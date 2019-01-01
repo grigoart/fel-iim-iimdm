@@ -756,9 +756,11 @@ public:
 
 class Paginator: public Drawable, public Clickable {
 public:
-	int x, y, width = 130, height = 35;
+	int x, y, width = 160, height = 35;
 	size_t* pageVisibleRef;
 	size_t* pageCountRef;
+
+	rgb_t pageIncludedColor = rgb_t(COLOR_BG_LIGHTER.r * 2, COLOR_BG_LIGHTER.g * 2, COLOR_BG_LIGHTER.b * 2);
 
 	CenteredText* pageOne;
 	CenteredText* pageTwo;
@@ -775,12 +777,16 @@ public:
 		pageFour = new CenteredText(x + (height + 5) * 3, y, height, height, "4");
 	}
 	void draw(Context& ctx) {
+		ctx.rectangle(pageOne->x, pageOne->y, pageOne->width, pageOne->height, (*pageCountRef >= 1) ? pageIncludedColor : COLOR_BG_LIGHTER);
 		ctx.emptyRectangle(pageOne->x, pageOne->y, pageOne->width, pageOne->height, (*pageVisibleRef == 0) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, COLOR_LINE);
 		pageOne->draw(ctx);
+		ctx.rectangle(pageTwo->x, pageTwo->y, pageTwo->width, pageTwo->height, (*pageCountRef >= 2) ? pageIncludedColor : COLOR_BG_LIGHTER);
 		ctx.emptyRectangle(pageTwo->x, pageTwo->y, pageTwo->width, pageTwo->height, (*pageVisibleRef == 1) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, COLOR_LINE);
 		pageTwo->draw(ctx);
+		ctx.rectangle(pageThree->x, pageThree->y, pageThree->width, pageThree->height, (*pageCountRef >= 3) ? pageIncludedColor : COLOR_BG_LIGHTER);
 		ctx.emptyRectangle(pageThree->x, pageThree->y, pageThree->width, pageThree->height, (*pageVisibleRef == 2) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, COLOR_LINE);
 		pageThree->draw(ctx);
+		ctx.rectangle(pageFour->x, pageFour->y, pageFour->width, pageFour->height, (*pageCountRef >= 4) ? pageIncludedColor : COLOR_BG_LIGHTER);
 		ctx.emptyRectangle(pageFour->x, pageFour->y, pageFour->width, pageFour->height, (*pageVisibleRef == 3) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, COLOR_LINE);
 		pageFour->draw(ctx);
 	}
@@ -873,7 +879,7 @@ public:
 				controls.at(i)->click(x, y, button);
 			}
 		}
-		pageCount = 1 + !pageIsEmpty(1) + !pageIsEmpty(2) + !pageIsEmpty(3);
+		pageCount = (!pageIsEmpty(3)) ? 4 : (!pageIsEmpty(2)) ? 3 : (!pageIsEmpty(1)) ? 2 : 1;
 	}
 	void setVisible(int index) {
 		pageVisible = index;
@@ -990,7 +996,7 @@ public:
 		height = heightc;
 		play = new PlayButton(x + 20, y + 20, bg);
 		valueSpin = new ValueSpin(x + 200, y + 10, &(bg->bpm));
-		paginator = new Paginator(x + 200, y + 75, &(bg->pageVisible), &(bg->pageCount));
+		paginator = new Paginator(x + 290, y + 35, &(bg->pageVisible), &(bg->pageCount));
 	}
 	void draw(Context& ctx) {
 		ctx.emptyRectangle(x, y, width, height, SIZE_LINE_THIN, COLOR_LINE);
