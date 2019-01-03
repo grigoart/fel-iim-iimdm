@@ -31,8 +31,10 @@ class Context;
 class SoundControl;
 class App;
 
+/*Preloaded sample data of one metronome tick*/
 audio_sample_t metronome_data[] = {20041, 21321, 14, 24908, 14389, 11827, 50, 24948, 0, 2045, 14985, 21855, 15094, 18, -14940, -21055, -14703, -35, 14530, 20392, 14257, 45, -14137, -19720, -13885, 4, 13657, 19127, 13458, -23, -13216, -18554, -13053, 21, 12801, 17996, 12607, 4, -12393, -17424, -12194, -21, 12021, 16863, 11803, 20, -11654, -16302, -11452, -9, 11265, 15771, 11084, -11, -10883, -15257, -10715, 15, 10509, 14768, 10354, -8, -10153, -14282, -9968, -16, 9829, 13779, 9630, 24, -9515, -13263, -9346, 12, 9146, 12829, 9008, -14, -8817, -12390, -8676, -1, 8513, 11944, 8357, 2, -8210, -11513, -8055, -9, 7915, 11083, 7766, 5, -7624, -10666, -7480, -1, 7335, 10265, 7204, -2, -7052, -9883, -6922, 8, 6780, 9504, 6648, 0, -6519, -9138, -6388, -8, 6268, 8773, 6136, 5, -6020, -8415, -5896, -1, 5777, 8075, 5661, -3, -5531, -7747, -5421, 5, 5299, 7429, 5191, 2, -5079, -7112, -4968, -3, 4867, 6806, 4758, 4, -4661, -6509, -4554, 0, 4455, 6220, 4355, -6, -4252, -5943, -4158, 5, 4054, 5674, 3960, -3, -3868, -5415, -3777, -3, 3691, 5158, 3600, 3, -3520, -4908, -3432, 0, 3351, 4671, 3268, -3, -3181, -4442, -3104, 4, 3019, 4225, 2947, 0, -2867, -4011, -2794, -4, 2723, 3800, 2648, 4, -2582, -3595, -2510, 0, 2444, 3403, 2378, -4, -2310, -3219, -2245, 2, 2178, 3043, 2118, -2, -2057, -2870, -1996, -2, 1941, 2703, 1880, 2, -1830, -2543, -1771, 1, 1721, 2390, 1667, -3, -1613, -2244, -1564, 3, 1511, 2108, 1465, -2, -1416, -1974, -1368, -1, 1324, 1843, 1278, 1, -1239, -1718, -1194, 0, 1154, 1600, 1114, -1, -1073, -1490, -1036, 2, 996, 1386, 961, 0, -924, -1285, -888, -1, 856, 1187, 820, 1, -791, -1094, -758, -1, 729, 1006, 698, -2, -669, -925, -641, 2, 613, 848, 585, -1, -561, -778, -536, -1, 512, 708, 488, 1, -467, -643, -444, 0, 423, 582, 403, 1, -381, -526, -363, 1, 343, 473, 327, 0, -309, -424, -292, 0, 276, 379, 261, 0, -245, -336, -231, 1, 217, 297, 204, 0, -191, -263, -179, 0, 168, 231, 157, 1, -147, -200, -136, 0, 127, 173, 118, 0, -110, -149, -101, 1, 93, 126, 86, 0, -79, -106, -71, 0, 66, 89, 60, 0, -55, -74, -49, 0, 45, 60, 40, 0, -36, -48, -32, 0, 28, 37, 25, 0, -22, -29, -19, 0, 17, 22, 15, 0, -12, -16, -11, -1, 8, 11, 8, 1, -5, -7, -4, 0, 4, 5, 3, 1, -2, -2, -2, 0, 1, 2, 1, 0, -1, -1, -1, 0, 0, 0, 0, 0, -1, 0, 0, 0};
 
+/*Each array represents 3x5 image of single letter. 1 = pixel, 0 = empty*/
 int A[]		=		{1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1};
 int B[]		=		{1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0};
 int C[]		=		{0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1};
@@ -76,22 +78,28 @@ int COLON[]	=		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
 int UNDERSCORE[]=	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1};
 int SLASH[]	=		{0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0};
 
+/*Window width*/
 int WIN_W = 865;
+/*Window height*/
 int WIN_H = 768;
 
+/*Line properties*/
 int SIZE_LINE_BOLDEST = 5;
 int SIZE_LINE_BOLD = 3;
 int SIZE_LINE_THIN = 1;
 
+/*Color properties*/
 rgb_t COLOR_BG = rgb_t(25, 25, 25);
 rgb_t COLOR_BG_LIGHTER = rgb_t(45, 45, 45);
 rgb_t COLOR_LINE = rgb_t(255, 0, 0);
 rgb_t COLOR_LINE_INACTIVE = rgb_t(150, 0, 0);
 
+/*Default volume for single track*/
 float DEFAULT_VOLUME = 0.5f;
 
 SoundControl* G_SC = nullptr;
 
+/*Check if (x, y) belongs to rectangle(r_x, r_y, r_width, r_height)*/
 bool isIn(int x, int y, int r_x, int r_y, int r_width, int r_height) {
 	return x > r_x && x < r_x + r_width && y > r_y && y < r_y + r_height;
 }
@@ -99,22 +107,28 @@ bool isIn(int x, int y, rectangle_t rect) {
 	return isIn(x, y, rect.x, rect.y, rect.width, rect.height);
 }
 
+/*Drawable virtual class*/
 class Drawable {
 public:
 	virtual void draw(Context& ctx) = 0;
 };
 
+/*Updatable virtual class*/
 class Updatable {
 public:
 	virtual void update(int delta) = 0;
 };
 
+/*Clickable virtual class*/
 class Clickable {
 public:
+	/*Returns rectangle, representing click area of clickable object*/
 	virtual rectangle_t hitrectangle() = 0;
+	/*Execute click action. b can be 0, 1 or 3 (left, right, middle mouse button)*/
 	virtual void click(int x, int y, int b) = 0;
 };
 
+/*Main context*/
 class Context {
 public:
 	SDLDevice* sdl;
@@ -129,19 +143,31 @@ public:
 	void draw(Drawable& drawable) {
 		drawable.draw(*this);
 	}
+	/*Render prepared data*/
 	int render() {
 		return sdl->blit(*data);
 	}
+	/*Fill with color*/
 	void clear(rgb_t color) {data->clear(color);}
+	/*Put pixel with color*/
 	void pixel(int x, int y, rgb_t color) {(*data)(x, y) = color;}
+	/*Draw colored line*/
 	void line(int x0, int y0, int x1, int y1, rgb_t color) {draw_line(*data, rectangle_t(x0, y0), rectangle_t(x1, y1), color);}
+	/*Draw circle with given radius*/
 	void circle(int x, int y, int r, rgb_t color) {circle(x, y, 2 * r, 2 * r, color);}
+	/*Draw circle inside given rectangle*/
 	void circle(int x, int y, int width, int height, rgb_t color) {draw_circle(*data, rectangle_t(x, y, x + width, y + height), color);}
+	/*Draw filled rectangle*/
 	void rectangle(int x, int y, int width, int height, rgb_t color) {draw_rectangle(*data, rectangle_t(x, y, width, height), color);}
+	/*Draw empty rectangle with border size*/
 	void emptyRectangle(int x, int y, int width, int height, int border, rgb_t color) {draw_empty_rectangle(*data, rectangle_t(x, y, width, height), border, color);}
+	/*Draw empty rectangle with default border size*/
 	void emptyRectangle(int x, int y, int width, int height, rgb_t color) {emptyRectangle(x, y, width, height, 1, color);}
+	/*Draw polyline*/
 	void polyline(const std::vector<rectangle_t>& points, rgb_t color) {draw_polyline(*data, points, color);}
+	/*Draw polygon*/
 	void polygon(const std::vector<rectangle_t>& points, rgb_t color) {draw_polyline(*data, points, color);}
+	/*Draw triangle*/
 	void triangle(int x1, int y1, int x2, int y2, int x3, int y3, rgb_t color) {
 		std::vector<rectangle_t> v;
 		v.push_back(rectangle_t(x1, y1, 0, 0));
@@ -150,10 +176,9 @@ public:
 		v.push_back(rectangle_t(x1, y1, 0, 0));
 		polygon(v, color);
 	};
-	//void draw_line_steep(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, iimavlib::rgb_t color)
-	//void draw_line_thick(iimavlib::video_buffer_t& data, iimavlib::rectangle_t start, iimavlib::rectangle_t end, int border, iimavlib::rgb_t color)
 };
 
+/*Sample configuration*/
 class SampleConfig {
 public:
 	float volume;
@@ -164,6 +189,7 @@ public:
 
 };
 
+/*Represents single audio track with given configuration*/
 class SampleTrack {
 public:
 	SampleConfig* config;
@@ -217,6 +243,7 @@ public:
 	}
 };
 
+/*Audio filter that serve to control audio in application*/
 class SoundControl: public AudioFilter {
 public:
 	std::vector<SampleTrack> sampleTracks;
@@ -231,16 +258,18 @@ public:
 		}
 		G_SC = this;
 	}
-
+	
+	/*Load metronome tick sample*/
 	std::string loadMetronome() {
 		m_data = new std::vector<audio_sample_t>(metronome_data, metronome_data + 410);
 		sampleTracks.push_back(SampleTrack(*m_data));
 		return "Metronome";
 	}
 
+	/*Load given wav file. Max duration is 120 sec, 44100Hz and 16 bit.*/
 	bool loadFileData(const std::string filename) {
 		try {
-			size_t timeDurationRestriction = 120; // 60 sec
+			size_t timeDurationRestriction = 120;
 			size_t samples = 44100;
 			size_t length = samples * timeDurationRestriction;
 
@@ -259,22 +288,27 @@ public:
 		return true;
 	}
 
+	/*Add sample with given index to playing queue*/
 	void playSample(int index) {
 		playingSampleTracks.push_back(sampleTracks[index].shallowClone());
 	}
 
+	/*Set configuration volume of sample with given index*/
 	void setVolume(int index, float vol) {
 		sampleTracks[index].config->volume = vol;
 	}
 
+	/*Toggle mute in configuration for sample with given index*/
 	void toggleMute(int index) {
 		sampleTracks[index].config->muted = !sampleTracks[index].config->muted;
 	}
 
+	/*Toggle reverse in configuration for sample with given index*/
 	void reverse(int index) {
 		sampleTracks[index].config->reversed = !sampleTracks[index].config->reversed;
 	}
 
+	/*Clear playing queue and clear audio buffer*/
 	void forceStop() {
 		std::unique_lock<std::mutex> lock(position_mutex);
 		playingSampleTracks.clear();
@@ -285,6 +319,7 @@ private:
 
 	std::mutex position_mutex;
 
+	/*Mix two given samples. Returns new sample, which is the result of mixing two given samples*/
 	audio_sample_t mixSamples(const audio_sample_t& sample1, const audio_sample_t& sample2) {
 		float samplef1Left = sample1.left / 32768.0f;
 		float samplef2Left = sample2.left / 32768.0f;
