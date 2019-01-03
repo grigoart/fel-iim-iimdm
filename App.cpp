@@ -31,6 +31,8 @@ class Context;
 class SoundControl;
 class App;
 
+audio_sample_t metronome_data[] = {20041, 21321, 14, 24908, 14389, 11827, 50, 24948, 0, 2045, 14985, 21855, 15094, 18, -14940, -21055, -14703, -35, 14530, 20392, 14257, 45, -14137, -19720, -13885, 4, 13657, 19127, 13458, -23, -13216, -18554, -13053, 21, 12801, 17996, 12607, 4, -12393, -17424, -12194, -21, 12021, 16863, 11803, 20, -11654, -16302, -11452, -9, 11265, 15771, 11084, -11, -10883, -15257, -10715, 15, 10509, 14768, 10354, -8, -10153, -14282, -9968, -16, 9829, 13779, 9630, 24, -9515, -13263, -9346, 12, 9146, 12829, 9008, -14, -8817, -12390, -8676, -1, 8513, 11944, 8357, 2, -8210, -11513, -8055, -9, 7915, 11083, 7766, 5, -7624, -10666, -7480, -1, 7335, 10265, 7204, -2, -7052, -9883, -6922, 8, 6780, 9504, 6648, 0, -6519, -9138, -6388, -8, 6268, 8773, 6136, 5, -6020, -8415, -5896, -1, 5777, 8075, 5661, -3, -5531, -7747, -5421, 5, 5299, 7429, 5191, 2, -5079, -7112, -4968, -3, 4867, 6806, 4758, 4, -4661, -6509, -4554, 0, 4455, 6220, 4355, -6, -4252, -5943, -4158, 5, 4054, 5674, 3960, -3, -3868, -5415, -3777, -3, 3691, 5158, 3600, 3, -3520, -4908, -3432, 0, 3351, 4671, 3268, -3, -3181, -4442, -3104, 4, 3019, 4225, 2947, 0, -2867, -4011, -2794, -4, 2723, 3800, 2648, 4, -2582, -3595, -2510, 0, 2444, 3403, 2378, -4, -2310, -3219, -2245, 2, 2178, 3043, 2118, -2, -2057, -2870, -1996, -2, 1941, 2703, 1880, 2, -1830, -2543, -1771, 1, 1721, 2390, 1667, -3, -1613, -2244, -1564, 3, 1511, 2108, 1465, -2, -1416, -1974, -1368, -1, 1324, 1843, 1278, 1, -1239, -1718, -1194, 0, 1154, 1600, 1114, -1, -1073, -1490, -1036, 2, 996, 1386, 961, 0, -924, -1285, -888, -1, 856, 1187, 820, 1, -791, -1094, -758, -1, 729, 1006, 698, -2, -669, -925, -641, 2, 613, 848, 585, -1, -561, -778, -536, -1, 512, 708, 488, 1, -467, -643, -444, 0, 423, 582, 403, 1, -381, -526, -363, 1, 343, 473, 327, 0, -309, -424, -292, 0, 276, 379, 261, 0, -245, -336, -231, 1, 217, 297, 204, 0, -191, -263, -179, 0, 168, 231, 157, 1, -147, -200, -136, 0, 127, 173, 118, 0, -110, -149, -101, 1, 93, 126, 86, 0, -79, -106, -71, 0, 66, 89, 60, 0, -55, -74, -49, 0, 45, 60, 40, 0, -36, -48, -32, 0, 28, 37, 25, 0, -22, -29, -19, 0, 17, 22, 15, 0, -12, -16, -11, -1, 8, 11, 8, 1, -5, -7, -4, 0, 4, 5, 3, 1, -2, -2, -2, 0, 1, 2, 1, 0, -1, -1, -1, 0, 0, 0, 0, 0, -1, 0, 0, 0};
+
 int A[]		=		{1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1};
 int B[]		=		{1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0};
 int C[]		=		{0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1};
@@ -72,8 +74,9 @@ int MINUS[]	=		{0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0};
 int PLUS[]	=		{0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0};
 int COLON[]	=		{0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0};
 int UNDERSCORE[]=	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1};
+int SLASH[]	=		{0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0};
 
-int WIN_W = 1024;
+int WIN_W = 865;
 int WIN_H = 768;
 
 int SIZE_LINE_BOLDEST = 5;
@@ -81,7 +84,7 @@ int SIZE_LINE_BOLD = 3;
 int SIZE_LINE_THIN = 1;
 
 rgb_t COLOR_BG = rgb_t(25, 25, 25);
-rgb_t COLOR_BG_LIGHTER = rgb_t(35, 35, 35);
+rgb_t COLOR_BG_LIGHTER = rgb_t(45, 45, 45);
 rgb_t COLOR_LINE = rgb_t(255, 0, 0);
 rgb_t COLOR_LINE_INACTIVE = rgb_t(150, 0, 0);
 
@@ -155,8 +158,9 @@ class SampleConfig {
 public:
 	float volume;
 	bool muted;
+	bool reversed;
 
-	SampleConfig(): volume(DEFAULT_VOLUME), muted(false) {}
+	SampleConfig(): volume(DEFAULT_VOLUME), muted(false), reversed(false) {}
 
 };
 
@@ -188,7 +192,7 @@ public:
 
 	audio_sample_t getCurrentSample() {
 		if (finished() || config->muted) return audio_sample_t();
-		audio_sample_t sample = sampleData->at(position);
+		audio_sample_t sample = (config->reversed) ? sampleData->at(sampleData->size() - 1 - position) : sampleData->at(position);
 		float samplefLeft = sample.left / 32768.0f;
 		float samplefRight = sample.right / 32768.0f;
 		// change the volume
@@ -218,11 +222,20 @@ public:
 	std::vector<SampleTrack> sampleTracks;
 	float masterVolume = 0.8f;
 
+	std::vector<audio_sample_t>* m_data;
+
 	SoundControl(std::vector<std::string> filesc): AudioFilter(pAudioFilter()) {
+		loadMetronome();
 		for (int i = 0; i < filesc.size(); i++) {
 			loadFileData(filesc[i]);
 		}
 		G_SC = this;
+	}
+
+	std::string loadMetronome() {
+		m_data = new std::vector<audio_sample_t>(metronome_data, metronome_data + 410);
+		sampleTracks.push_back(SampleTrack(*m_data));
+		return "Metronome";
 	}
 
 	bool loadFileData(const std::string filename) {
@@ -256,6 +269,10 @@ public:
 
 	void toggleMute(int index) {
 		sampleTracks[index].config->muted = !sampleTracks[index].config->muted;
+	}
+
+	void reverse(int index) {
+		sampleTracks[index].config->reversed = !sampleTracks[index].config->reversed;
 	}
 
 	void forceStop() {
@@ -386,6 +403,7 @@ public:
 			case '+': arr = PLUS; break;
 			case ':': arr = COLON; break;
 			case '_': arr = UNDERSCORE; break;
+			case '/': arr = SLASH; break;
 			default: break;
 			}
 			for (size_t j = 0; j < 15; j++) {
@@ -426,7 +444,6 @@ public:
 class Button: public Drawable {
 public:
 	int x, y, width, height;
-	rgb_t color;
 	rgb_t fillColor;
 	bool highlited = false;
 	bool on = false;
@@ -435,17 +452,16 @@ public:
 		y = yc;
 		width = widthc;
 		height = heightc;
-		color = colorc;
 		fillColor = fillColorc;
 		on = false;
 	}
 	void draw(Context& ctx) {
 		if (highlited) {
-			ctx.rectangle(x, y, width, height, rgb_t(color.r / 2, color.g / 2, color.b / 2));
+			ctx.rectangle(x, y, width, height, rgb_t(COLOR_LINE.r / 2, COLOR_LINE.g / 2, COLOR_LINE.b / 2));
 		} else {
 			ctx.rectangle(x, y, width, height, fillColor);
 		}
-		ctx.emptyRectangle(x, y, width, height, (on) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, color);
+		ctx.emptyRectangle(x, y, width, height, (on) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, COLOR_LINE);
 	}
 	rectangle_t hitrectangle() {
 		return rectangle_t(x, y, width, height);
@@ -469,18 +485,17 @@ public:
 	int x, y;
 	static const int height = 14;
 	static const int width = 14;
-	rgb_t bColor = rgb_t(0, 200, 0);
-	rgb_t bColorAlt = rgb_t(0, 100, 0);
 	bool on = true;
+	rgb_t color;
 	std::function<void()> action;
-	HeadControlButton(int xc, int yc, std::function<void()> actionc) {
+	HeadControlButton(int xc, int yc, rgb_t colorc, std::function<void()> actionc) : color(colorc) {
 		action = actionc;
 		x = xc;
 		y = yc;
 	}
 	void draw(Context& ctx) {
-		ctx.rectangle(x, y, width, height, (on) ? bColor : bColorAlt);
-		ctx.emptyRectangle(x, y, width, height, SIZE_LINE_BOLD, rgb_t(0, 255, 0));
+		ctx.rectangle(x, y, width, height, (on) ? rgb_t(color.r * 0.9, color.g * 0.9, color.b * 0.9) : rgb_t(color.r * 0.5, color.g * 0.5, color.b * 0.5));
+		ctx.emptyRectangle(x, y, width, height, SIZE_LINE_BOLD, color);
 	}
 	rectangle_t hitrectangle() {
 		return rectangle_t(x, y, width, height);
@@ -491,16 +506,40 @@ public:
 	}
 };
 
+class SmallButton: public Drawable, public Clickable {
+public:
+	int x, y;
+	static const int height = 25;
+	static const int width = 25;
+	rgb_t color;
+	std::function<void()> action;
+	SmallButton(int xc, int yc, rgb_t colorc, std::function<void()> actionc) : color(colorc) {
+		action = actionc;
+		x = xc;
+		y = yc;
+	}
+	void draw(Context& ctx) {
+		ctx.rectangle(x, y, width, height, color);
+		ctx.emptyRectangle(x, y, width, height, SIZE_LINE_BOLD, rgb_t(color.r / 2, color.g / 2, color.b / 2));
+	}
+	rectangle_t hitrectangle() {
+		return rectangle_t(x, y, width, height);
+	}
+	void click(int, int, int) {
+		action();
+	}
+};
+
 class Head: public Drawable {
 public:
 	int x, y, width, height;
-	rgb_t color;
 	bool on = true;
 	Text text;
 	SoundControl* sc;
 	HeadControlButton* muteB;
+	HeadControlButton* revB;
 	int index;
-	Head(SoundControl* scc, int indexc, int xc, int yc, int widthc, int heightc, std::string& caption, rgb_t colorc):
+	Head(SoundControl* scc, int indexc, int xc, int yc, int widthc, int heightc, std::string& caption):
 		text(xc + 8, yc + 10, &caption, 15) {
 		sc = scc;
 		index = indexc;
@@ -508,13 +547,15 @@ public:
 		y = yc;
 		width = widthc;
 		height = heightc;
-		color = colorc;
-		muteB = new HeadControlButton(x + width - muteB->width - 8, y + height - muteB->height - 8, [scc, indexc](){scc->toggleMute(indexc);});
+		muteB = new HeadControlButton(x + width - muteB->width - 8, y + height - muteB->height - 8, rgb_t(0, 255, 0), [scc, indexc](){scc->toggleMute(indexc);});
+		revB = new HeadControlButton(x + width - revB->width*2 - 8*2, y + height - revB->height - 8, rgb_t(75, 75, 235), [scc, indexc](){scc->reverse(indexc);});
+		revB->on = false;
 	}
 	void draw(Context& ctx) {
-		ctx.emptyRectangle(x, y, width, height, (on) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, color);
+		ctx.emptyRectangle(x, y, width, height, (on) ? SIZE_LINE_BOLD : SIZE_LINE_THIN, COLOR_LINE);
 		text.draw(ctx);
 		muteB->draw(ctx);
+		revB->draw(ctx);
 	}
 	rectangle_t hitrectangle() {
 		return rectangle_t(x, y, width, height);
@@ -522,6 +563,9 @@ public:
 	void click(int x, int y, int) {
 		if (isIn(x, y, muteB->hitrectangle())) {
 			muteB->click(x, y, 0);
+		}
+		if (isIn(x, y, revB->hitrectangle())) {
+			revB->click(x, y, 0);
 		}
 	}
 };
@@ -532,7 +576,6 @@ public:
 	size_t count;
 	int bSize = 30;
 	int bGap = 5;
-	rgb_t bColorAlt = rgb_t(175, 0, 0);
 	rgb_t lightColor = rgb_t(200, 200, 200);
 	std::vector<Button> b;
 	bool highlited = false;
@@ -584,6 +627,12 @@ public:
 	bool isEmpty() {
 		return activeCount == 0;
 	}
+	void clear() {
+		for (size_t i = 0; i < count; i++) {
+			if (b.at(i).on) b.at(i).click(0, 0, 0);
+		}
+		activeCount = 0;
+	}
 };
 
 class HeadCol: public Drawable, public Clickable {
@@ -593,7 +642,6 @@ public:
 	int bHeight = 30;
 	int bWidth = 175;
 	int bGap = 5;
-	rgb_t bColorAlt = rgb_t(175, 0, 0);
 	SoundControl* sc;
 	std::vector<Head> b;
 	HeadCol(SoundControl* scc, int xc, int yc, std::vector<std::string>& captions) {
@@ -602,7 +650,7 @@ public:
 		y = yc;
 		count = captions.size();
 		for (size_t i = 0; i < count; i++) {
-			b.push_back(Head(scc, i, x, y + (bHeight + bGap) * i, bWidth, bHeight, captions.at(i), COLOR_LINE));
+			b.push_back(Head(scc, i, x, y + (bHeight + bGap) * i, bWidth, bHeight, captions.at(i)));
 		}
 	}
 	void draw(Context& ctx) {
@@ -676,6 +724,63 @@ public:
 	}
 	void update(int) {
 		value = std::to_string(*valueRef);
+	}
+	rectangle_t hitrectangle() {return rectangle_t(x, y, width, height);}
+	void click(int x, int y, int b) {
+		if (isIn(x, y, valueSpinBtnUp->hitrectangle())) {
+			if (b == 0) {
+				(*valueRef) += step;
+			}
+			else {
+				(*valueRef) += bigStep;
+			}
+			if (*valueRef > maxValue) (*valueRef) = maxValue;
+		}
+		else if (isIn(x, y, valueSpinBtnDown->hitrectangle())) {
+			if (b == 0) {
+				(*valueRef) -= step;
+			}
+			else {
+				(*valueRef) -= bigStep;
+			}
+			if (*valueRef < minValue) (*valueRef) = minValue;
+		}
+	}
+};
+
+class MasterVolumeSpin: public Drawable, public Updatable, public Clickable {
+public:
+	int x, y, width = 75, height = 75;
+	rgb_t color;
+	float* valueRef;
+	std::string value;
+	float step = 0.05f;
+	float bigStep = 0.1f;
+	float maxValue = 1.0f;
+	float minValue = 0.0f;
+
+	CenteredText* caption;
+	ValueSpinBtn* valueSpinBtnUp;
+	ValueSpinBtn* valueSpinBtnDown;
+	CenteredText* valueText;
+	MasterVolumeSpin(int xc, int yc, float* valueRefc) {
+		x = xc;
+		y = yc;
+		valueRef = valueRefc;
+		value = std::to_string(static_cast<int>(round(*valueRef * 100)));
+		caption = new CenteredText(x, y, width, height / 4, "Master");
+		valueText = new CenteredText(x, y + 2 * height / 4, width, height / 4, &value);
+		valueSpinBtnUp = new ValueSpinBtn(x, y + height / 4, width, height / 4, true);
+		valueSpinBtnDown = new ValueSpinBtn(x, y + 3 * height / 4, width, height / 4, false);
+	}
+	void draw(Context& ctx) {
+		caption->draw(ctx);
+		valueSpinBtnUp->draw(ctx);
+		valueText->draw(ctx);
+		valueSpinBtnDown->draw(ctx);
+	}
+	void update(int) {
+		value = std::to_string(static_cast<int>(round(*valueRef * 100)));
 	}
 	rectangle_t hitrectangle() {return rectangle_t(x, y, width, height);}
 	void click(int x, int y, int b) {
@@ -879,6 +984,9 @@ public:
 				controls.at(i)->click(x, y, button);
 			}
 		}
+		recalcPages();
+	}
+	void recalcPages() {
 		pageCount = (!pageIsEmpty(3)) ? 4 : (!pageIsEmpty(2)) ? 3 : (!pageIsEmpty(1)) ? 2 : 1;
 	}
 	void setVisible(int index) {
@@ -934,6 +1042,23 @@ public:
 		}
 		return true;
 	}
+	void clear() {
+		for (int i = 0; i < countX; i++) {
+			pages[pageVisible][i].clear();
+		}
+		recalcPages();
+	}
+	void loadPreset(int preset) {
+		if (preset == 1) {
+
+		}
+		else if (preset == 2) {
+
+		}
+		else if (preset == 3) {
+
+		}
+	}
 	~ButtonGrid() {
 		delete h;
 	}
@@ -942,19 +1067,17 @@ public:
 class PlayButton: public Drawable, public Clickable {
 public:
 	int x, y, width;
-	rgb_t color;
 	bool on = false;
 	ButtonGrid* bg;
 	PlayButton(int xc, int yc, ButtonGrid* bgc/*, int widthc, int heightc, rgb_t colorc*/) {
 		x = xc;
 		y = yc;
 		width = 55;
-		color = COLOR_LINE;
 		bg = bgc;
 	}
 	void draw(Context& ctx) {
 		ctx.rectangle(x, y, width, width, COLOR_BG);
-		ctx.emptyRectangle(x, y, width, width, SIZE_LINE_BOLD, color);
+		ctx.emptyRectangle(x, y, width, width, SIZE_LINE_BOLD, COLOR_LINE);
 		int iconWidth = width / 3;
 		int leftTopX = x + width / 2 - (iconWidth / 2);
 		int leftTopY = y + width / 2 - (iconWidth / 2);
@@ -986,31 +1109,85 @@ class ControlPanel: public Drawable, public Updatable, public Clickable {
 public:
 	int x, y, width, height;
 	rgb_t color;
+
+	CenteredText* colorText;
+	SmallButton* colorRed;
+	SmallButton* colorGreen;
+	SmallButton* colorBlue;
+
+	Text* hint1;
+	Text* hint2;
+	Text* hint3;
+	Text* hint4;
+
 	PlayButton* play;
+	MasterVolumeSpin* masterVolumeSpin;
 	ValueSpin* valueSpin;
+	CenteredText* text;
 	Paginator* paginator;
 	ControlPanel(int xc, int yc, int widthc, int heightc, ButtonGrid* bg) {
 		x = xc;
 		y = yc;
 		width = widthc;
 		height = heightc;
-		play = new PlayButton(x + 20, y + 20, bg);
-		valueSpin = new ValueSpin(x + 200, y + 10, &(bg->bpm));
-		paginator = new Paginator(x + 290, y + 35, &(bg->pageVisible), &(bg->pageCount));
+
+		colorText = new CenteredText(x + 175 + 100 - 5, y + 10, 30*3, 35, "COLOR SCHEME");
+		colorRed = new SmallButton(x + 175 + 100, y + 45, rgb_t(200, 0, 0), [COLOR_LINE, COLOR_LINE_INACTIVE](){COLOR_LINE = rgb_t(225, 25, 25); COLOR_LINE_INACTIVE = rgb_t(155, 0, 0);});
+		colorGreen = new SmallButton(x + 205 + 100, y + 45, rgb_t(0, 200, 0), [COLOR_LINE, COLOR_LINE_INACTIVE](){COLOR_LINE = rgb_t(25, 200, 25); COLOR_LINE_INACTIVE = rgb_t(0, 155, 0);});
+		colorBlue = new SmallButton(x + 235 + 100, y + 45, rgb_t(0, 0, 200), [COLOR_LINE, COLOR_LINE_INACTIVE](){COLOR_LINE = rgb_t(25, 25, 225); COLOR_LINE_INACTIVE = rgb_t(0, 0, 155);});
+
+		hint1 = new Text(x + 115, y + 15, "1234  - PAGES");
+		hint2 = new Text(x + 115, y + 35, "SPACE - STOP/PLAY");
+		hint3 = new Text(x + 115, y + 55, "C     - CLEAR");
+		hint4 = new Text(x + 115, y + 75, "ESC   - EXIT");
+
+		play = new PlayButton(x + 25, y + 20, bg);
+		masterVolumeSpin = new MasterVolumeSpin(x + width - 25*2 - 100*2, y + 10, &(bg->sc->masterVolume));
+		valueSpin = new ValueSpin(x + width - 25 - 100, y + 10, &(bg->bpm));
+		text = new CenteredText(x + width - 25*4 - 85*2 - 40*4, y + 10, 40*4, 35, "PAGE");
+		paginator = new Paginator(x + width - 25*4 - 85*2 - 40*4, y + 40, &(bg->pageVisible), &(bg->pageCount));
 	}
 	void draw(Context& ctx) {
 		ctx.emptyRectangle(x, y, width, height, SIZE_LINE_THIN, COLOR_LINE);
+
+		ctx.draw(*colorText);
+		ctx.draw(*colorRed);
+		ctx.draw(*colorGreen);
+		ctx.draw(*colorBlue);
+
+		ctx.draw(*hint1);
+		ctx.draw(*hint2);
+		ctx.draw(*hint3);
+		ctx.draw(*hint4);
+
 		ctx.draw(*play);
+		ctx.draw(*masterVolumeSpin);
 		ctx.draw(*valueSpin);
 		ctx.draw(*paginator);
+		ctx.draw(*text);
 	}
 	void update(int delta) {
+		masterVolumeSpin->update(delta);
 		valueSpin->update(delta);
 	}
 	rectangle_t hitrectangle() {return rectangle_t(x, y, width, height);}
 	void click(int x, int y, int b) {
 		if (isIn(x, y, play->hitrectangle())) {
 			play->click(x, y, 0);
+		}
+
+		if (isIn(x, y, colorRed->hitrectangle())) {
+			colorRed->click(x, y, b);
+		}
+		if (isIn(x, y, colorGreen->hitrectangle())) {
+			colorGreen->click(x, y, b);
+		}
+		if (isIn(x, y, colorBlue->hitrectangle())) {
+			colorBlue->click(x, y, b);
+		}
+
+		if (isIn(x, y, masterVolumeSpin->hitrectangle())) {
+			masterVolumeSpin->click(x, y, b);
 		}
 		if (isIn(x, y, valueSpin->hitrectangle())) {
 			valueSpin->click(x, y, b);
@@ -1034,20 +1211,22 @@ public:
 		data(rectangle_t(0, 0, width, height), COLOR_BG),
 		ctx(dynamic_cast<SDLDevice&>(*this), data) {
 
-		ButtonGrid bg(scc, 25, 75, 16, captions);
+		ButtonGrid bg(scc, 25, 25, 16, captions);
 
-		ControlPanel cp(0, 500, WIN_W, 100, &bg);
+		ControlPanel cp(25, WIN_H - 25 - 100, WIN_W - 50, 100, &bg);
 
 		add(&bg);
 		add(&cp);
 
 		addKeyHandler(keys::key_space, [cp]() {cp.play->togglePlay();});
-		addKeyHandler('=', [scc]() {scc->masterVolume += 0.05f; if (scc->masterVolume > 100.0f) scc->masterVolume = 100.0f;});
-		addKeyHandler('-', [scc]() {scc->masterVolume -= 0.05f; if (scc->masterVolume < 0.0f) scc->masterVolume = 0.0f;});
 		addKeyHandler('1', [&bg]() {bg.setVisible(0);});
 		addKeyHandler('2', [&bg]() {bg.setVisible(1);});
 		addKeyHandler('3', [&bg]() {bg.setVisible(2);});
 		addKeyHandler('4', [&bg]() {bg.setVisible(3);});
+		addKeyHandler('c', [&bg]() {bg.clear();});
+		addKeyHandler('q', [&bg]() {bg.loadPreset(1);});
+		addKeyHandler('w', [&bg]() {bg.loadPreset(2);});
+		addKeyHandler('e', [&bg]() {bg.loadPreset(3);});
 
 		launch();
 	}
@@ -1089,7 +1268,7 @@ private:
 	void update(std::vector<Updatable*>& updatable) {
 		auto timeAfter = getTime();
 		int delta = timeAfter - time;
-		time = 2 * getTime() - timeAfter;
+		time = /*2 * getTime() - */timeAfter;
 		/*if ((timeAfter - time) > 60000/bpm/4) {
 			//printf("%d\n", timeAfter);
 			time = 2 * getTime() - timeAfter;*/
@@ -1212,18 +1391,18 @@ int main(int argc, char **argv) {
 			}
 		}
 		else {
-			files.push_back("/home/dsv/Downloads/mm1/iimavlib-master/data/drum0.wav");
-			files.push_back("/home/dsv/Downloads/mm1/iimavlib-master/data/drum1.wav");
-			files.push_back("/home/dsv/Downloads/mm1/iimavlib-master/data/drum2.wav");
 		}
 
 		std::vector<std::string> captions;
+		captions.push_back("Metronome");
 		for (size_t i = 0; i < files.size(); i++) {
 			std::string path = files[i];
 			auto slash = path.find_last_of("\\/");
 			auto dot = path.find_last_of("\\.");
 			captions.push_back(path.substr(slash + 1, dot - slash - 1).c_str());
 		};
+
+		WIN_H = 100 + 25*3 + 35 * captions.size();
 
 		std::thread t1([files]() {
 			audio_id_t device_id = static_cast<audio_id_t>("hw:0,0"); //iimavlib::PlatformDevice::default_device();
@@ -1237,7 +1416,7 @@ int main(int argc, char **argv) {
 
 		usleep(1000000); // wait till constructor finish
 		std::thread t2([G_SC, captions]() {
-			App app(G_SC, 1024, 768, captions);
+			App app(G_SC, WIN_W, WIN_H, captions);
 		});
 
 		t1.detach();
