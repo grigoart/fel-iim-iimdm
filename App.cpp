@@ -337,24 +337,30 @@ private:
 		return outputSample;
 	}
 
+	/*Change sample amplitude (based on master volume value)*/
 	void adjustSampleVolume(audio_sample_t& sample) {
 		sample.left *= masterVolume;
 		sample.right *= masterVolume;
 	}
-
+	
+	/*Main function*/
 	error_type_t do_process(audio_buffer_t& buffer) {
 		std::unique_lock<std::mutex> lock(position_mutex);
 		auto data = buffer.data.begin();
 		auto dataEnd = buffer.data.end();
 		while (data != dataEnd) {
+			/*No sample track queued*/
 			if (playingSampleTracks.size() == 0) {
+				/*Fill buffer with zeroes*/
 				std::fill(data, dataEnd, 0);
 				return error_type_t::ok;
 			} else {
 				audio_sample_t sampleToWrite;
+				/*Iterate through sample track queue, mix all active samples and write to buffer*/
 				for (size_t i = 0; i < playingSampleTracks.size();) {
 					sampleToWrite = mixSamples(sampleToWrite, playingSampleTracks[i]->getCurrentSample());
 					playingSampleTracks[i]->position++;
+					/*Check if sample track is finished*/
 					if (playingSampleTracks[i]->finished()) {
 						playingSampleTracks.erase(playingSampleTracks.begin() + i);
 					} else {
@@ -362,6 +368,7 @@ private:
 					}
 				}
 				adjustSampleVolume(sampleToWrite);
+				/*Write mixed sample to buffer*/
 				*data++ = sampleToWrite;
 			}
 		}
@@ -369,6 +376,7 @@ private:
 	}
 };
 
+/*Class represents text object*/
 class Text: public Drawable {
 public:
 	int x, y;
@@ -450,6 +458,7 @@ public:
 	}
 };
 
+/*Class represents text object with auto-centre feature*/
 class CenteredText: public Drawable {
 public:
 	int x, y, width, height;
@@ -476,6 +485,7 @@ public:
 	}
 };
 
+/*Class represents single cell (button) in button grid*/
 class Button: public Drawable {
 public:
 	int x, y, width, height;
@@ -515,6 +525,7 @@ public:
 	}
 };
 
+/*Class represents control button for single header cell*/
 class HeadControlButton: public Drawable, public Clickable {
 public:
 	int x, y;
@@ -541,6 +552,7 @@ public:
 	}
 };
 
+/*Class represents simple button with lambda action*/
 class SmallButton: public Drawable, public Clickable {
 public:
 	int x, y;
@@ -565,6 +577,7 @@ public:
 	}
 };
 
+/*Class represents single header cell*/
 class Head: public Drawable {
 public:
 	int x, y, width, height;
@@ -605,6 +618,7 @@ public:
 	}
 };
 
+/*Class represents single column of button cells*/
 class ButtonCol: public Drawable, public Clickable {
 public:
 	int x, y;
@@ -670,6 +684,7 @@ public:
 	}
 };
 
+/*Class represents header column (containing head cells)*/
 class HeadCol: public Drawable, public Clickable {
 public:
 	int x, y;
@@ -705,6 +720,7 @@ public:
 	}
 };
 
+/*Class represents single button for value spinner (+ and -)*/
 class ValueSpinBtn: public Drawable {
 public:
 	int x, y, width, height;
@@ -726,6 +742,7 @@ public:
 	rectangle_t hitrectangle() {return rectangle_t(x, y, width, height);}
 };
 
+/*Class represents value spinner*/
 class ValueSpin: public Drawable, public Updatable, public Clickable {
 public:
 	int x, y, width = 75, height = 75;
@@ -783,6 +800,7 @@ public:
 	}
 };
 
+/*Class represents value spinner for master volume value*/
 class MasterVolumeSpin: public Drawable, public Updatable, public Clickable {
 public:
 	int x, y, width = 75, height = 75;
@@ -840,6 +858,7 @@ public:
 	}
 };
 
+/*Class represents horizontal value spinner*/
 class ValueHorizontalSpin: public Drawable, public Updatable, public Clickable {
 public:
 	int x, y, width = 75, height = 30;
@@ -894,6 +913,7 @@ public:
 	}
 };
 
+/*Class represents object for pagintaing purpose*/
 class Paginator: public Drawable, public Clickable {
 public:
 	int x, y, width = 160, height = 35;
@@ -947,20 +967,30 @@ public:
 	}
 };
 
+/*Class represents complete button grid*/
 class ButtonGrid: public Drawable, public Updatable, public Clickable {
 public:
 	int x, y;
 	int countX, countY;
 	HeadCol* h;
 	SoundControl* sc;
+	/*Index of active page*/
 	size_t pageActive = 0;
+	/*Index of currently visible (opened) page*/
 	size_t pageVisible = 0;
+	/*Amount of active pages*/
 	size_t pageCount = 1;
+	/*Pages by itself*/
 	std::vector<std::vector<ButtonCol>> pages;
+	/*Horizontal spinners to control single track volume*/
 	std::vector<ValueHorizontalSpin*> controls;
+	/*Index of currently active button column. -1 means playback is stopped*/
 	int active = -1;
+	/*True if is playing*/
 	bool running = false;
+	/*Time value from last update*/
 	int passedTime = 0;
+	/*BPM value*/
 	int bpm = 120;
 	ButtonGrid(SoundControl* scc, int xc, int yc, int countXc, std::vector<std::string>& captions) {
 		sc = scc;
@@ -968,17 +998,21 @@ public:
 		y = yc;
 		countX = countXc;
 		countY = captions.size();
+		/*Initialize header column*/
 		h = new HeadCol(scc, x, y, captions);
+		/*Prepare vectors representing pages*/
 		pages.push_back(std::vector<ButtonCol>());
 		pages.push_back(std::vector<ButtonCol>());
 		pages.push_back(std::vector<ButtonCol>());
 		pages.push_back(std::vector<ButtonCol>());
+		/*Fill button grid for single page*/
 		for (int i = 0; i < countX; i++) {
 			pages[0].push_back(ButtonCol(x + h->bGap + h->bWidth + i * 35, y, countY, (i % 4 == 0) ? COLOR_BG_LIGHTER : COLOR_BG));
 			for (int j = 0; j < countY; j++) {
 				controls.push_back(new ValueHorizontalSpin(x + h->bGap + h->bWidth + countX * 35, y + j * 35, &(scc->sampleTracks[j].config->volume)));
 			}
 		}
+		/*Initialize rest of the pages*/
 		pages[1] = pages[0];
 		pages[2] = pages[0];
 		pages[3] = pages[0];
@@ -994,6 +1028,7 @@ public:
 	}
 	void update(int delta) {
 		if (running) {
+			/*Count delta time*/
 			passedTime += delta;
 			if (passedTime >= 60000 / bpm / 4) {
 				passedTime -= 60000 / bpm / 4;
@@ -1021,14 +1056,19 @@ public:
 		}
 		recalcPages();
 	}
+	/*Recalculate number of active pages*/
 	void recalcPages() {
 		pageCount = (!pageIsEmpty(3)) ? 4 : (!pageIsEmpty(2)) ? 3 : (!pageIsEmpty(1)) ? 2 : 1;
 	}
+	/*Make page with specific index visible*/
 	void setVisible(int index) {
 		pageVisible = index;
 	}
+	/*Activate next column/page*/
 	void activateNext() {
+		/*This is the last button column on the page*/
 		if (active == countX - 1) {
+			/*Current page is last active*/
 			if (pageActive >= pageCount) {
 				activate(0, 0);
 			}
@@ -1040,6 +1080,7 @@ public:
 			activate(pageActive, active + 1);
 		}
 	}
+	/*Activate button column with specific symbol on the page with specific symbol*/
 	void activate(int page, int index) {
 		if (active != -1) {
 			pages[pageActive].at(active).dark();
@@ -1053,6 +1094,7 @@ public:
 			}
 		}
 	}
+	/*Deactivate current column*/
 	void deactivate() {
 		if (active != -1) {
 			pages[pageActive].at(active).dark();
@@ -1060,23 +1102,27 @@ public:
 			active = -1;
 		}
 	}
+	/*Stop running grid*/
 	void stop() {
 		deactivate();
 		sc->forceStop();
 		active = -1;
 		running = false;
 	};
+	/*Start running grid*/
 	void run() {
 		running = true;
 		passedTime = 60000 / bpm / 4;
 		pageVisible = 0;
 	};
+	/*Check if page contains any active button cell*/
 	bool pageIsEmpty(int index) {
 		for (int i = 0; i < countX; i++) {
 			if (!pages[index][i].isEmpty()) return false;;
 		}
 		return true;
 	}
+	/*Deactivate all button cells on current visible page*/
 	void clear() {
 		for (int i = 0; i < countX; i++) {
 			pages[pageVisible][i].clear();
