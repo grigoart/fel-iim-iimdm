@@ -1439,8 +1439,16 @@ int main(int argc, char **argv) {
 	try {
 		std::vector<std::string> files;
 
-		if (argc > 1) {
-			for (int counter = 1; counter < argc; counter++) {
+		printf("\nNOTE: Device name has to be specified as first argument. If you want to use default device, use \"DEFAULT\" keyword.\n\n");
+
+		if (argc == 1) {
+			return 0;
+		}
+
+		std::string deviceName = argv[1];
+
+		if (argc > 2) {
+			for (int counter = 2; counter < argc; counter++) {
 				std::string file = argv[counter];
 				if (!isDir(file)) {
 					if (exists(file)) {
@@ -1464,8 +1472,6 @@ int main(int argc, char **argv) {
 				}
 			}
 		}
-		else {
-		}
 
 		std::vector<std::string> captions;
 		captions.push_back("Metronome");
@@ -1478,8 +1484,8 @@ int main(int argc, char **argv) {
 
 		WIN_H = 100 + 25*3 + 35 * captions.size();
 
-		std::thread t1([files]() {
-			audio_id_t device_id = static_cast<audio_id_t>("hw:0,0"); //iimavlib::PlatformDevice::default_device();
+		std::thread t1([deviceName, files]() {
+			audio_id_t device_id = ((deviceName == "DEFAULT") ? iimavlib::PlatformDevice::default_device() : static_cast<audio_id_t>(deviceName));
 			audio_params_t params;
 			params.rate = sampling_rate_t::rate_44kHz;
 			auto sink = filter_chain<SoundControl>(files)
@@ -1494,9 +1500,9 @@ int main(int argc, char **argv) {
 		});
 
 		t1.detach();
-		printf("\nT1 FINISHED\n");
+		printf("Audio thread initialization finished.\n");
 		t2.join();
-		printf("\nT2 FINISHED\n");
+		printf("Rendering thread was properly finished.\n");
 	}
 	catch (std::exception& e) {
 		printf("Can not start application\n");
