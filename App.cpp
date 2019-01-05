@@ -1316,9 +1316,6 @@ public:
 		while (ctx.render()) {
 			update(updatable);
 			render(drawable);
-#ifdef SYSTEM_LINUX
-			//usleep(60000/bpm/4 * 1000);
-#endif
 		}
 	}
 	template <typename T>
@@ -1349,14 +1346,10 @@ private:
 	void update(std::vector<Updatable*>& updatable) {
 		auto timeAfter = getTime();
 		int delta = timeAfter - time;
-		time = /*2 * getTime() - */timeAfter;
-		/*if ((timeAfter - time) > 60000/bpm/4) {
-			//printf("%d\n", timeAfter);
-			time = 2 * getTime() - timeAfter;*/
+		time = timeAfter;
 		for (size_t i = 0; i < updatable.size(); i++) {
 			updatable.at(i)->update(delta);
 		}
-		//}
 	}
 	void render(std::vector<Drawable*>& drawable) {
 		ctx.clear(COLOR_BG);
