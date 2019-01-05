@@ -1441,11 +1441,13 @@ int main(int argc, char **argv) {
 
 		printf("\nNOTE: Device name has to be specified as first argument. If you want to use default device, use \"DEFAULT\" keyword.\n\n");
 
-		if (argc == 1) {
-			return 0;
+		std::string deviceName;
+		if (argc <= 1) {
+			deviceName = "DEFAULT";
 		}
-
-		std::string deviceName = argv[1];
+		else {
+ 			deviceName = argv[1];
+ 		}
 
 		if (argc > 2) {
 			for (int counter = 2; counter < argc; counter++) {
