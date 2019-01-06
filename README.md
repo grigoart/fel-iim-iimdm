@@ -1,4 +1,4 @@
-# Project Title
+# Drum machine
 
 Basic drum machine written in C++ using iimavlib library.
 
