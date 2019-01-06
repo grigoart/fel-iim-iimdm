@@ -2,6 +2,16 @@
 
 Basic drum machine written in C++ using iimavlib library.
 
+## Installation
+
+Add to *__iimavlib-master/examples/__*__CMakeLists.txt__ file inside _IF (BUILD_EXAMPLES) ... IF(SDL_FOUND)_ block:
+
+```
+add_executable(app app.cpp)
+target_link_libraries ( app  ${EX_LIBS} )
+install(TARGETS app RUNTIME DESTINATION bin)
+```
+
 ## How to use
 
 These instructions will show you how to start and use this program.
