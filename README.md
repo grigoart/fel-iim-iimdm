@@ -75,7 +75,7 @@ Launch with default device and with directory, containing several wav files:
 #### Grid layout (sequence editor)
 
 7) Track name
-8) Blue button - reverse play, green button - toggle mute
+8) Blue button - reverse playback, green button - toggle mute
 9) Active grid cells
 10) Inactive grid cells
 11) Per track volume controller
