@@ -1,6 +1,6 @@
 # Drum machine
 
-Basic drum machine written in C++ using iimavlib library.
+Basic drum machine written in C++ using ![iimavlib](https://github.com/iimcz/iimavlib) library.
 
 ## Compile and build
 
