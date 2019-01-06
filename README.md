@@ -72,7 +72,7 @@ Launch with default device and with directory, containing several wav files:
 5) Master volume controller
 6) Tempo controller
 
-### Grid layout (sequence editor)
+#### Grid layout (sequence editor)
 
 7) Track name
 8) Blue button - reverse play, green button - toggle mute
