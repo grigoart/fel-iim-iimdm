@@ -32,3 +32,20 @@ Launch with default device and with directory, containing several wav files:
 ### GUI
 
 ![Screenshot](img/img.png)
+
+#### Control panel
+
+1) Stop / Play button
+2) Hotkeys
+3) Colore schemes
+4) Paginator
+5) Master volume controller
+6) Tempo controller
+
+### Grid layout (sequence editor)
+
+7) Track name
+8) Blue button - reverse play, green button - toggle mute
+9) Active grid cells
+10) Inactive grid cells
+11) Per track volume controller
