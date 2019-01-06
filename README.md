@@ -4,8 +4,8 @@ Basic drum machine written in C++ using [iimavlib](https://github.com/iimcz/iima
 
 ## Compile and build
 
-### Prepare:
-Add to *__iimavlib-master/examples/__*__CMakeLists.txt__ file inside _IF (BUILD_EXAMPLES) IF(SDL_FOUND)_ block:
+### Prepare
+Add to __iimavlib-master/examples/CMakeLists.txt__ file inside _IF (BUILD_EXAMPLES) IF(SDL_FOUND)_ block:
 
 ```
 add_executable(app app.cpp)
@@ -13,7 +13,7 @@ target_link_libraries ( app  ${EX_LIBS} )
 install(TARGETS app RUNTIME DESTINATION bin)
 ```
 
-### Configure:
+### Configure
 
 ```
 ./prepare_linux.sh
