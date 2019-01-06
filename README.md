@@ -10,7 +10,9 @@ These instructions will show you how to start and use this program.
 
 Device id has to be specified as first argument. If you want to use default device, use "DEFAULT" keyword.
 
-./app <device id|DEFAULT> [wav files or directories]
+_./app <device id|DEFAULT> [wav files or directories]_
+
+### Examples
 
 ```
 Launch with default device and without any wav file:
