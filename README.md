@@ -72,7 +72,7 @@ Launch with default device and with directory, containing several wav files:
 
 1) Stop / Play button
 2) Hotkeys
-3) Colore schemes
+3) Color schemes
 4) Paginator
 5) Master volume controller
 6) Tempo controller
