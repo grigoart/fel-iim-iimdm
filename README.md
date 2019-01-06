@@ -31,3 +31,4 @@ Launch with default device and with directory, containing several wav files:
 
 ### GUI
 
+![Screenshot](img/img.png)
