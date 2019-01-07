@@ -2,23 +2,14 @@
 #include "iimavlib/WaveFile.h"
 #include "iimavlib/AudioFilter.h"
 #include "iimavlib_high_api.h"
-#ifdef SYSTEM_LINUX
-#include <unistd.h>
-#endif
-#include <algorithm>
-#include <vector>
 #include "iimavlib/Utils.h"
 #include "iimavlib/video_ops.h"
-#include <stdlib.h>     /* srand, rand */
+#include <vector>
 #include <sys/timeb.h>
-#include <utility>      // std::pair, std::make_pair
-#include <string>       // std::string
-#include <list>       // std::list
+#include <string>
 #include <thread>
 #include <dirent.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <math.h>
 
 using std::unique_ptr;
 
