@@ -1,6 +1,3 @@
-// cd /home/dsv/Downloads/mm1/iimavlib-master/build
-// ./bin/app ../data/drum0.wav ../data/drum1.wav ../data/drum2.wav ../data/min_kick_17_F.wav ../data/Hip-Hop-Snare-1.wav
-
 #include "iimavlib/SDLDevice.h"
 #include "iimavlib/WaveFile.h"
 #include "iimavlib/AudioFilter.h"
@@ -1129,22 +1126,11 @@ public:
 		}
 		recalcPages();
 	}
-	void loadPreset(int preset) {
-		if (preset == 1) {
-
-		}
-		else if (preset == 2) {
-
-		}
-		else if (preset == 3) {
-
-		}
-	}
-	~ButtonGrid() {
-		delete h;
-	}
+	void loadPreset(int preset) {}
+	~ButtonGrid() {}
 };
 
+/*Class represents PLAY/STOP button on the control panel*/
 class PlayButton: public Drawable, public Clickable {
 public:
 	int x, y, width;
@@ -1172,6 +1158,7 @@ public:
 	rectangle_t hitrectangle() {
 		return rectangle_t(x, y, width, width);
 	}
+	/*Play/stop action*/
 	void togglePlay() {
 		on = !on;
 		if (!on) {
@@ -1186,25 +1173,33 @@ public:
 	}
 };
 
+/*Class represents control panel on the bottom of the layout*/
 class ControlPanel: public Drawable, public Updatable, public Clickable {
 public:
 	int x, y, width, height;
 	rgb_t color;
 
+	/*Color scheme selection*/
 	CenteredText* colorText;
 	SmallButton* colorRed;
 	SmallButton* colorGreen;
 	SmallButton* colorBlue;
 
+	/*Hotkey hints*/
 	Text* hint1;
 	Text* hint2;
 	Text* hint3;
 	Text* hint4;
 
+	/*Play/stop button*/
 	PlayButton* play;
+	/*Master volume controller*/
 	MasterVolumeSpin* masterVolumeSpin;
+	/*Tempo controller*/
 	ValueSpin* valueSpin;
+	/*Paginator caption*/
 	CenteredText* text;
+	/*Paginator switch*/
 	Paginator* paginator;
 	ControlPanel(int xc, int yc, int widthc, int heightc, ButtonGrid* bg) {
 		x = xc;
@@ -1212,35 +1207,45 @@ public:
 		width = widthc;
 		height = heightc;
 
+		/*Color scheme switch initialization*/
 		colorText = new CenteredText(x + 175 + 100 - 5, y + 10, 30*3, 35, "COLOR SCHEME");
 		colorRed = new SmallButton(x + 175 + 100, y + 45, rgb_t(200, 0, 0), [COLOR_LINE, COLOR_LINE_INACTIVE](){COLOR_LINE = rgb_t(225, 25, 25); COLOR_LINE_INACTIVE = rgb_t(155, 0, 0);});
 		colorGreen = new SmallButton(x + 205 + 100, y + 45, rgb_t(0, 200, 0), [COLOR_LINE, COLOR_LINE_INACTIVE](){COLOR_LINE = rgb_t(25, 200, 25); COLOR_LINE_INACTIVE = rgb_t(0, 155, 0);});
 		colorBlue = new SmallButton(x + 235 + 100, y + 45, rgb_t(0, 0, 200), [COLOR_LINE, COLOR_LINE_INACTIVE](){COLOR_LINE = rgb_t(25, 25, 225); COLOR_LINE_INACTIVE = rgb_t(0, 0, 155);});
 
+		/*Hotkey hints initialization*/
 		hint1 = new Text(x + 115, y + 15, "1234  - PAGES");
 		hint2 = new Text(x + 115, y + 35, "SPACE - STOP/PLAY");
 		hint3 = new Text(x + 115, y + 55, "C     - CLEAR");
 		hint4 = new Text(x + 115, y + 75, "ESC   - EXIT");
 
+		/*Play/stop button initialization*/
 		play = new PlayButton(x + 25, y + 20, bg);
+		/*Master volume contoller initialization*/
 		masterVolumeSpin = new MasterVolumeSpin(x + width - 25*2 - 100*2, y + 10, &(bg->sc->masterVolume));
+		/*Tempo controller initialization*/
 		valueSpin = new ValueSpin(x + width - 25 - 100, y + 10, &(bg->bpm));
+		/*Paginator cation initialization*/
 		text = new CenteredText(x + width - 25*4 - 85*2 - 40*4, y + 10, 40*4, 35, "PAGE");
+		/*Paginator switcher initialization*/
 		paginator = new Paginator(x + width - 25*4 - 85*2 - 40*4, y + 40, &(bg->pageVisible), &(bg->pageCount));
 	}
 	void draw(Context& ctx) {
 		ctx.emptyRectangle(x, y, width, height, SIZE_LINE_THIN, COLOR_LINE);
-
+		
+		/*Render color scheme controller*/
 		ctx.draw(*colorText);
 		ctx.draw(*colorRed);
 		ctx.draw(*colorGreen);
 		ctx.draw(*colorBlue);
 
+		/*Render hotkey hints*/
 		ctx.draw(*hint1);
 		ctx.draw(*hint2);
 		ctx.draw(*hint3);
 		ctx.draw(*hint4);
 
+		/*Render play/stop button, master volume controller, tempo controller and paginator*/
 		ctx.draw(*play);
 		ctx.draw(*masterVolumeSpin);
 		ctx.draw(*valueSpin);
@@ -1279,12 +1284,15 @@ public:
 	}
 };
 
+/*Application class, extends SDLDevice, accepts sound controller as contructor argument*/
 class App: public SDLDevice {
 public:
 	Context ctx;
 	video_buffer_t data;
+	/*Beats per minute value*/
 	int bpm = 120;
 
+	/*Keyboard key to lambda bind map*/
 	std::map<char, std::function<void()>> keyFunctionMap;
 
 	App(SoundControl* scc, int width, int height, std::vector<std::string> captions):
@@ -1292,38 +1300,45 @@ public:
 		data(rectangle_t(0, 0, width, height), COLOR_BG),
 		ctx(dynamic_cast<SDLDevice&>(*this), data) {
 
+		/*Initialize main grid sequencer*/
 		ButtonGrid bg(scc, 25, 25, 16, captions);
 
+		/*Initialize control panel*/
 		ControlPanel cp(25, WIN_H - 25 - 100, WIN_W - 50, 100, &bg);
 
+		/*Add initialized grid and control panel to list of active objects*/
 		add(&bg);
 		add(&cp);
 
+		/*Bind hotkeys to lambdas*/
 		addKeyHandler(keys::key_space, [cp]() {cp.play->togglePlay();});
 		addKeyHandler('1', [&bg]() {bg.setVisible(0);});
 		addKeyHandler('2', [&bg]() {bg.setVisible(1);});
 		addKeyHandler('3', [&bg]() {bg.setVisible(2);});
 		addKeyHandler('4', [&bg]() {bg.setVisible(3);});
 		addKeyHandler('c', [&bg]() {bg.clear();});
-		addKeyHandler('q', [&bg]() {bg.loadPreset(1);});
-		addKeyHandler('w', [&bg]() {bg.loadPreset(2);});
-		addKeyHandler('e', [&bg]() {bg.loadPreset(3);});
 
+		/*Start main rendering loop*/
 		launch();
 	}
+	/*Rendering oop*/
 	void launch() {
 		start();
 		while (ctx.render()) {
+			/*Update all active objects*/
 			update(updatable);
+			/*Render all active objects*/
 			render(drawable);
 		}
 	}
+	/*Add object to list of active objects*/
 	template <typename T>
 	void add(T* object) {
 		if (auto ptr = dynamic_cast<Drawable*>(object)) {drawable.push_back(ptr);}
 		if (auto ptr = dynamic_cast<Updatable*>(object)) {updatable.push_back(ptr);}
 		if (auto ptr = dynamic_cast<Clickable*>(object)) {clickable.push_back(ptr);}
 	}
+	/*Add hotkey bind*/
 	void addKeyHandler(char key, std::function<void()> lambda) {
 		keyFunctionMap[key] = lambda;
 	}
@@ -1331,18 +1346,24 @@ public:
 		stop();
 	}
 private:
+	/*Time before last update*/
 	int time = getTime();
 
+	/*Vector of all active Drawable objects*/
 	std::vector<Drawable*> drawable;
+	/*Vector of all active Updatable objects*/
 	std::vector<Updatable*> updatable;
+	/*Vector of all active Clickable objects*/
 	std::vector<Clickable*> clickable;
-
+	
+	/*Get current time in milliseconds*/
 	int getTime() {
 		timeb tb;
 		ftime(&tb);
 		int nCount = tb.millitm + (tb.time & 0xfffff) * 1000;
 		return nCount;
 	}
+	/*Calls update function from every active Updatable object. Delta time is passed as single argument*/
 	void update(std::vector<Updatable*>& updatable) {
 		auto timeAfter = getTime();
 		int delta = timeAfter - time;
@@ -1351,6 +1372,7 @@ private:
 			updatable.at(i)->update(delta);
 		}
 	}
+	/*Render every active Drawable object*/
 	void render(std::vector<Drawable*>& drawable) {
 		ctx.clear(COLOR_BG);
 		for (size_t i = 0; i < drawable.size(); i++) {
@@ -1398,6 +1420,7 @@ private:
 	}
 };
 
+/*List all file in directory and return as string vector*/
 std::vector<std::string> listFiles(const std::string path) {
 	std::vector<std::string> files;
 	DIR *dir;
@@ -1418,11 +1441,13 @@ std::vector<std::string> listFiles(const std::string path) {
 	return files;
 }
 
+/*Returns true if file exists*/
 bool exists(const std::string& name) {
   struct stat buffer;   
   return (stat (name.c_str(), &buffer) == 0); 
 }
 
+/*Returns true if exists and is directory*/
 bool isDir(const std::string pathname) {
 	struct stat info;
 	if( !exists(pathname) ) {
@@ -1435,6 +1460,7 @@ bool isDir(const std::string pathname) {
 	    return false;
 }
 
+/*Main method*/
 int main(int argc, char **argv) {
 	try {
 		std::vector<std::string> files;
@@ -1475,18 +1501,25 @@ int main(int argc, char **argv) {
 			}
 		}
 
+		/*Vector of captions for every sample track*/
 		std::vector<std::string> captions;
+		/*Add metronome as first sample track*/
 		captions.push_back("Metronome");
+		/*Make caption for every input wav file*/
 		for (size_t i = 0; i < files.size(); i++) {
 			std::string path = files[i];
 			auto slash = path.find_last_of("\\/");
 			auto dot = path.find_last_of("\\.");
+			/*Slash extension*/
 			captions.push_back(path.substr(slash + 1, dot - slash - 1).c_str());
 		};
 
+		/*Evaluate window height, based on sample tracks count*/
 		WIN_H = 100 + 25*3 + 35 * captions.size();
-
+		
+		/*Start main audio thread*/
 		std::thread t1([deviceName, files]() {
+			/*Define audio device*/
 			audio_id_t device_id = ((deviceName == "DEFAULT") ? iimavlib::PlatformDevice::default_device() : static_cast<audio_id_t>(deviceName));
 			audio_params_t params;
 			params.rate = sampling_rate_t::rate_44kHz;
@@ -1496,11 +1529,14 @@ int main(int argc, char **argv) {
 			sink->run();
 		});
 
-		usleep(1000000); // wait till constructor finish
+		/*Wait till constructor finish*/
+		usleep(1000000);
+		/*Start main video(GUI and rendering) thread*/
 		std::thread t2([G_SC, captions]() {
 			App app(G_SC, WIN_W, WIN_H, captions);
 		});
 
+		/*Join both threads*/
 		t1.detach();
 		printf("Audio thread initialization finished.\n");
 		t2.join();
